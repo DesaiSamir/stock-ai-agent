@@ -1,0 +1,147 @@
+# WinGPT VS Code Extension Code Organization Rules
+
+## Directory Structure and Responsibilities
+
+### src/
+Root directory for all source code
+
+### src/extension.ts
+- Main extension entry point
+- Registers commands and activates extension
+- Should not contain business logic
+- Delegates to appropriate services and panels
+
+### src/views/
+- Contains root HTML templates for webviews
+- Example: chat.ts defines the main chat interface structure
+- Assembles components into complete views
+- Imports and combines styles, scripts, and components
+- Should not contain business logic or direct DOM manipulation
+- Responsible for the overall layout and composition
+
+### src/panels/
+- WebView panel implementations
+- Handles communication between VS Code and webview
+- Example: ChatPanel.ts manages chat interface and messaging
+- Should focus on panel lifecycle and message routing
+- Business logic should be delegated to services
+
+### src/services/
+- Business logic implementation
+- Stateful services should use singleton pattern
+- Example: Chat.ts handles chat operations and state
+- Should be independent of UI implementation
+
+### src/components/
+- UI components organized by type
+- /sections/: Large composite components (header, messages, input)
+- /core/: Basic reusable components (Button, Input)
+- /blocks/: Mid-level components (Toolbar, ModelSelector)
+- Components should be pure functions returning HTML strings
+- No direct DOM manipulation in component definitions
+
+### src/scripts/
+- Client-side JavaScript for webview
+- Organized by functionality (init, messages, state, handlers)
+- All scripts combined in index.ts
+- DOM manipulation and event handling belongs here
+- Each script file should have a single responsibility
+
+### src/styles/
+- CSS styles organized by component
+- Global styles in chat.ts
+- Component-specific styles stay with components
+- No inline styles in components
+
+### src/types/
+- TypeScript type definitions
+- Shared interfaces and types
+- Organized by domain (chat.ts, config.ts)
+
+### src/config/
+- Configuration management
+- Environment variables
+- User settings
+
+### src/constants/
+- Shared constant values
+- Organized by domain (api.ts, ui.ts)
+- No business logic, only value definitions
+
+### src/utils/
+- Shared utility functions
+- Pure helper functions
+- No state management
+- No UI-specific code
+
+## Code Organization Rules
+
+1. Separation of Concerns:
+   - UI components should not contain business logic
+   - Services should not contain UI logic
+   - Scripts handle DOM manipulation and events
+   - Styles should be centralized and reusable
+
+2. Component Structure:
+   - Components return HTML strings
+   - Use template literals for HTML
+   - Include necessary class names and IDs
+   - Reference constants for static values
+
+3. State Management:
+   - Global state handled by services
+   - Local state managed in webview scripts
+   - Use message passing for state updates
+   - Maintain clear data flow
+
+4. Message Handling:
+   - Define clear message contracts
+   - Use typed message interfaces
+   - Handle errors gracefully
+   - Log important events
+
+5. Styling:
+   - Use VS Code theme variables
+   - Maintain consistent naming
+   - Avoid inline styles
+   - Group related styles
+
+6. Script Organization:
+   - Separate by functionality
+   - Clear initialization order
+   - Handle cleanup properly
+   - Document dependencies
+
+7. Error Handling:
+   - Use typed error objects
+   - Provide meaningful error messages
+   - Log errors appropriately
+   - Handle edge cases
+
+8. Constants and Configuration:
+   - Use descriptive names
+   - Group related constants
+   - Document magic values
+   - Use enums where appropriate
+
+## File Naming Conventions
+
+- Use PascalCase for components: Header.ts, Button.ts
+- Use camelCase for utilities and services: webviewUtils.ts, chatService.ts
+- Use lowercase with dots for constants: api.ts, ui.ts
+- Test files end with .test.ts
+
+## Import Organization
+
+- Group imports by type:
+  1. External dependencies (vscode, etc.)
+  2. Local types and interfaces
+  3. Components and services
+  4. Utils and constants
+
+## Documentation
+
+- Include JSDoc comments for public functions
+- Document complex logic
+- Keep README up to date
+- Include examples for reusable components 
