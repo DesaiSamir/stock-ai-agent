@@ -1,132 +1,107 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import type { StockData, TimeInterval } from '../types/stock';
-import { generateStockData } from '../data/utils/generateStockData';
+import { http, type FormattedBarData } from '@/utils/http';
+import type { StreamPayload } from '@/utils/http';
+import { useTradeStationStore } from '@/store/tradestation';
 
 interface UseStockDataOptions {
   symbol: string;
   interval: TimeInterval;
-  refreshInterval?: number;
-}
-
-interface CurrentCandle {
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-  timestamp: number;
+  isPreMarket?: boolean;
 }
 
 export function useStockData({ 
   symbol, 
   interval = '1m',
-  refreshInterval = 1000 
+  isPreMarket = false
 }: UseStockDataOptions) {
   const [data, setData] = useState<StockData[]>([]);
-  const [isHydrated, setIsHydrated] = useState(false);
-  const currentCandleRef = useRef<CurrentCandle | null>(null);
-  const lastUpdateRef = useRef<number>(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { isConnected } = useTradeStationStore();
 
-  // Set hydration flag
   useEffect(() => {
-    setIsHydrated(true);
-  }, []);
-
-  // Initialize with mock data
-  useEffect(() => {
-    // Use a stable timestamp for initial render
-    const now = Math.floor(Date.now() / 60000) * 60000; // Round to nearest minute
-    const mockData = generateStockData({
-      symbol,
-      interval,
-      points: 100,
-      basePrice: 100,
-      volatility: 0.02
-    });
-
-    setData(mockData);
-    
-    if (isHydrated) {
-      // Initialize current candle
-      const latestPrice = mockData[0].close;
-      currentCandleRef.current = {
-        open: latestPrice,
-        high: latestPrice,
-        low: latestPrice,
-        close: latestPrice,
-        volume: 0,
-        timestamp: now
-      };
-      lastUpdateRef.current = now;
+    if (!isConnected) {
+      setError('Not connected to TradeStation');
+      return;
     }
-  }, [symbol, interval, isHydrated]);
 
-  // Handle real-time updates only after hydration
+    setIsLoading(true);
+    setError(null);
+
+    // Convert interval to TradeStation format
+    const unit = interval.endsWith('m') ? 'Minute' : 'Daily';
+    const intervalValue = parseInt(interval);
+    
+    // Create barchart request
+    const barchartRequest = http.createBarchartRequest(symbol, intervalValue, unit, isPreMarket);
+    const url = `/v2/stream/barchart/${barchartRequest.symbol}/${barchartRequest.interval}/${barchartRequest.unit}/${barchartRequest.barsBack}/${barchartRequest.lastDate}${barchartRequest.sessionTemplate ? `?SessionTemplate=${barchartRequest.sessionTemplate}` : ''}`;
+    
+    const payload: StreamPayload = {
+      method: 'STREAM',
+      url
+    };
+
+    // Handler for barchart data
+    const handleBarData = (barData: FormattedBarData[]) => {
+      setData(barData.map(bar => ({
+        ...bar,
+        symbol
+      })));
+      setIsLoading(false);
+    };
+
+    // Start streaming data
+    http.getBarChartData(payload, handleBarData)
+      .catch(err => {
+        console.error('Failed to fetch bar data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch bar data');
+        setIsLoading(false);
+      });
+
+    // Cleanup
+    return () => {
+      http.clearBarChartInterval();
+      http.clearQuoteInterval();
+    };
+  }, [symbol, interval, isPreMarket, isConnected]);
+
+  // Quote data streaming
   useEffect(() => {
-    if (!isHydrated) return;
+    if (!isConnected) return;
 
-    const updateInterval = setInterval(() => {
-      const now = Date.now();
-      const currentMinute = Math.floor(now / 60000) * 60000;
-      
-      if (!currentCandleRef.current) return;
+    const handleQuoteData = (quote: { Last: number; Volume: number }) => {
+      if (!quote) return;
 
-      // Calculate new price with random walk
-      const timeDiff = now - lastUpdateRef.current;
-      const baseVolatility = 0.003;
-      const timeScaledVolatility = baseVolatility * Math.sqrt(timeDiff / 1000); // Scale by square root of seconds
-      const change = (Math.random() - 0.5) * 2 * timeScaledVolatility; // Normalize to [-volatility, +volatility]
-      const newPrice = currentCandleRef.current.close * (1 + change);
-      
-      // Update current candle with dampened volume
-      currentCandleRef.current = {
-        ...currentCandleRef.current,
-        high: Math.max(currentCandleRef.current.high, newPrice),
-        low: Math.min(currentCandleRef.current.low, newPrice),
-        close: newPrice,
-        volume: currentCandleRef.current.volume + Math.random() * 100 // Reduced volume changes
-      };
+      setData(prevData => {
+        if (prevData.length === 0) return prevData;
 
-      // Check if we need to create a new candle
-      if (currentMinute > currentCandleRef.current.timestamp) {
-        // Push current candle to history
-        setData(prevData => [
-          {
-            symbol,
-            ...currentCandleRef.current!,
-            timestamp: new Date(currentCandleRef.current!.timestamp)
-          },
-          ...prevData
-        ]);
-
-        // Start new candle
-        currentCandleRef.current = {
-          open: newPrice,
-          high: newPrice,
-          low: newPrice,
-          close: newPrice,
-          volume: 0,
-          timestamp: currentMinute
+        const latestCandle = {
+          ...prevData[0],
+          close: quote.Last,
+          high: Math.max(prevData[0].high, quote.Last),
+          low: Math.min(prevData[0].low, quote.Last),
+          volume: quote.Volume
         };
-      }
 
-      lastUpdateRef.current = now;
-      
-      // Trigger re-render for intra-candle updates
-      setData(prevData => [
-        {
-          symbol,
-          ...currentCandleRef.current!,
-          timestamp: new Date(currentCandleRef.current!.timestamp)
-        },
-        ...prevData.slice(1)
-      ]);
-    }, refreshInterval);
+        return [latestCandle, ...prevData.slice(1)];
+      });
+    };
 
-    return () => clearInterval(updateInterval);
-  }, [symbol, interval, refreshInterval, isHydrated]);
+    // Start quote streaming
+    http.getQuoteDataStream(symbol, handleQuoteData);
 
-  return data;
+    // Cleanup
+    return () => {
+      http.clearQuoteInterval();
+    };
+  }, [symbol, isConnected]);
+
+  return {
+    data,
+    isLoading,
+    error
+  };
 } 

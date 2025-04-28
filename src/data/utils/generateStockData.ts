@@ -30,24 +30,24 @@ export function generateStockData({
   interval,
   basePrice = 100,
   volatility = 0.02,
-  points = 100,
+  points = 5,
 }: GenerateStockDataOptions): StockData[] {
   const data: StockData[] = [];
   const minutesPerInterval = INTERVAL_TO_MINUTES[interval];
   const now = new Date();
   let currentPrice = basePrice;
 
-  // Generate data points from newest to oldest
-  for (let i = 0; i < points; i++) {
+  // Generate data points from oldest to newest
+  for (let i = points - 1; i >= 0; i--) {
     // Calculate timestamp for this point
     const timestamp = new Date(now.getTime() - i * minutesPerInterval * 60 * 1000);
     
     // Generate random price movement
-    const priceChange = currentPrice * volatility * (Math.random() * 2 - 1);
-    const open = currentPrice;
-    const close = currentPrice + priceChange;
-    const high = Math.max(open, close) + Math.abs(priceChange) * Math.random();
-    const low = Math.min(open, close) - Math.abs(priceChange) * Math.random();
+    const priceChange = Math.round(currentPrice * volatility * (Math.random() * 2 - 1) * 100) / 100;
+    const open = Math.round(currentPrice * 100) / 100;
+    const close = Math.round((currentPrice + priceChange) * 100) / 100;
+    const high = Math.round((Math.max(open, close) + Math.abs(priceChange) * Math.random()) * 100) / 100;
+    const low = Math.round((Math.min(open, close) - Math.abs(priceChange) * Math.random()) * 100) / 100;
     
     // Update current price for next iteration
     currentPrice = close;
@@ -59,7 +59,7 @@ export function generateStockData({
 
     data.push({
       symbol,
-      timestamp,
+      date: timestamp,
       open,
       high,
       low,

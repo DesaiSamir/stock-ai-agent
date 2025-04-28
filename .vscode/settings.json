@@ -1,0 +1,13 @@
+{
+  "debug.javascript.autoAttachFilter": "always",
+  "debug.javascript.terminalOptions": {
+    "skipFiles": [
+      "<node_internals>/**"
+    ]
+  },
+  "debug.javascript.unmapMissingSources": true,
+  "debug.toolBarLocation": "floating",
+  "files.autoSave": "afterDelay",
+  "editor.formatOnSave": true,
+  "typescript.tsdk": "node_modules/typescript/lib"
+} 
