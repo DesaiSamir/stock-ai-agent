@@ -79,7 +79,7 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
           flexShrink: 0,
           position: 'relative'
         }}>
-          <StockChart data={stockData} />
+          <StockChart symbol="AAPL" initialData={stockData} />
         </Box>
 
         {/* Draggable Divider */}

@@ -1,147 +1,151 @@
-# WinGPT VS Code Extension Code Organization Rules
+# Stock AI Agent Code Organization Rules
 
 ## Directory Structure and Responsibilities
 
 ### src/
 Root directory for all source code
 
-### src/extension.ts
-- Main extension entry point
-- Registers commands and activates extension
+### src/app/
+- Next.js app router pages and layouts
+- Main application entry points
+- Route handlers and API endpoints
 - Should not contain business logic
-- Delegates to appropriate services and panels
+- Delegates to appropriate services and components
 
-### src/views/
-- Contains root HTML templates for webviews
-- Example: chat.ts defines the main chat interface structure
-- Assembles components into complete views
-- Imports and combines styles, scripts, and components
-- Should not contain business logic or direct DOM manipulation
-- Responsible for the overall layout and composition
-
-### src/panels/
-- WebView panel implementations
-- Handles communication between VS Code and webview
-- Example: ChatPanel.ts manages chat interface and messaging
-- Should focus on panel lifecycle and message routing
-- Business logic should be delegated to services
+### src/components/
+- React components organized by type
+- /ui/: Basic UI components (Button, Input, Card)
+- /charts/: Financial charting components
+- /layout/: Layout components (Header, Footer, Sidebar)
+- /features/: Feature-specific components
+- Components should be functional components with TypeScript
+- Use Material-UI and TailwindCSS for styling
 
 ### src/services/
 - Business logic implementation
+- API integration services
+- Stock market data services
+- AI/ML analysis services
 - Stateful services should use singleton pattern
-- Example: Chat.ts handles chat operations and state
 - Should be independent of UI implementation
 
-### src/components/
-- UI components organized by type
-- /sections/: Large composite components (header, messages, input)
-- /core/: Basic reusable components (Button, Input)
-- /blocks/: Mid-level components (Toolbar, ModelSelector)
-- Components should be pure functions returning HTML strings
-- No direct DOM manipulation in component definitions
+### src/agents/
+- AI/ML model implementations
+- Trading strategy logic
+- Market analysis algorithms
+- Prediction models
+- Should be well-documented and testable
 
-### src/scripts/
-- Client-side JavaScript for webview
-- Organized by functionality (init, messages, state, handlers)
-- All scripts combined in index.ts
-- DOM manipulation and event handling belongs here
-- Each script file should have a single responsibility
-
-### src/styles/
-- CSS styles organized by component
-- Global styles in chat.ts
-- Component-specific styles stay with components
-- No inline styles in components
-
-### src/types/
-- TypeScript type definitions
-- Shared interfaces and types
-- Organized by domain (chat.ts, config.ts)
-
-### src/config/
-- Configuration management
-- Environment variables
-- User settings
-
-### src/constants/
-- Shared constant values
-- Organized by domain (api.ts, ui.ts)
-- No business logic, only value definitions
+### src/hooks/
+- Custom React hooks
+- State management hooks
+- Data fetching hooks
+- Reusable business logic hooks
+- Should follow React hooks best practices
 
 ### src/utils/
 - Shared utility functions
-- Pure helper functions
-- No state management
-- No UI-specific code
+- Data transformation helpers
+- Date formatting utilities
+- Financial calculations
+- Pure helper functions with no side effects
+
+### src/types/
+- TypeScript type definitions
+- API response types
+- Stock market data types
+- Component prop types
+- Shared interfaces and types
+
+### src/lib/
+- Third-party library configurations
+- API client setup
+- Database connections
+- External service integrations
+
+### src/theme/
+- Material-UI theme configuration
+- Custom theme overrides
+- Color palettes
+- Typography settings
+- Component style defaults
+
+### src/data/
+- Mock data for development
+- Data fixtures
+- Test data sets
+- Data transformation examples
 
 ## Code Organization Rules
 
 1. Separation of Concerns:
-   - UI components should not contain business logic
-   - Services should not contain UI logic
-   - Scripts handle DOM manipulation and events
-   - Styles should be centralized and reusable
+   - UI components should be presentational only
+   - Business logic belongs in services
+   - Data fetching in hooks or services
+   - Styling through Material-UI and TailwindCSS
 
 2. Component Structure:
-   - Components return HTML strings
-   - Use template literals for HTML
-   - Include necessary class names and IDs
-   - Reference constants for static values
+   - Use functional components with TypeScript
+   - Implement proper prop types
+   - Use composition over inheritance
+   - Follow React best practices
 
 3. State Management:
-   - Global state handled by services
-   - Local state managed in webview scripts
-   - Use message passing for state updates
-   - Maintain clear data flow
+   - Use React hooks for local state
+   - Consider context for global state
+   - Implement proper state updates
+   - Handle loading and error states
 
-4. Message Handling:
-   - Define clear message contracts
-   - Use typed message interfaces
-   - Handle errors gracefully
-   - Log important events
+4. API Integration:
+   - Use axios for HTTP requests
+   - Implement proper error handling
+   - Use TypeScript for API types
+   - Document API endpoints
 
 5. Styling:
-   - Use VS Code theme variables
-   - Maintain consistent naming
-   - Avoid inline styles
-   - Group related styles
+   - Use Material-UI components
+   - Extend with TailwindCSS when needed
+   - Maintain consistent theming
+   - Follow responsive design principles
 
-6. Script Organization:
-   - Separate by functionality
-   - Clear initialization order
-   - Handle cleanup properly
-   - Document dependencies
+6. Data Visualization:
+   - Use appropriate charting libraries
+   - Implement proper data formatting
+   - Handle real-time updates
+   - Ensure accessibility
 
 7. Error Handling:
-   - Use typed error objects
+   - Implement proper error boundaries
+   - Use TypeScript for type safety
    - Provide meaningful error messages
    - Log errors appropriately
-   - Handle edge cases
 
-8. Constants and Configuration:
-   - Use descriptive names
-   - Group related constants
-   - Document magic values
-   - Use enums where appropriate
+8. Testing:
+   - Write unit tests for utilities
+   - Test business logic
+   - Implement integration tests
+   - Use Jest and React Testing Library
 
 ## File Naming Conventions
 
-- Use PascalCase for components: Header.ts, Button.ts
-- Use camelCase for utilities and services: webviewUtils.ts, chatService.ts
-- Use lowercase with dots for constants: api.ts, ui.ts
-- Test files end with .test.ts
+- Use PascalCase for components: StockChart.tsx, TradingPanel.tsx
+- Use camelCase for utilities and services: stockService.ts, dateUtils.ts
+- Use lowercase for hooks: useStockData.ts, useTradingStrategy.ts
+- Test files end with .test.tsx or .spec.tsx
 
 ## Import Organization
 
 - Group imports by type:
-  1. External dependencies (vscode, etc.)
-  2. Local types and interfaces
-  3. Components and services
-  4. Utils and constants
+  1. External dependencies (react, next, etc.)
+  2. Internal types and interfaces
+  3. Components
+  4. Hooks and services
+  5. Utils and constants
 
 ## Documentation
 
 - Include JSDoc comments for public functions
-- Document complex logic
+- Document complex algorithms
 - Keep README up to date
-- Include examples for reusable components 
+- Include examples for reusable components
+- Document API endpoints and data structures 

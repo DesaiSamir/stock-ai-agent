@@ -1,34 +1,66 @@
+'use client';
+
 import React from 'react';
-import type { StockData } from '../../types/stock';
 import { Typography, Box } from '@mui/material';
+import type { StockData } from '../../types/stock';
 
 interface StockStatsProps {
-  stock: StockData;
+  stock?: StockData;
 }
 
+const formatNumber = (num?: number) => {
+  if (num === undefined) return '-';
+  return num.toFixed(2);
+};
+
+const formatVolume = (num: number) => {
+  // Format with commas but no decimal places
+  return new Intl.NumberFormat('en-US', {
+    maximumFractionDigits: 0,
+    useGrouping: true,
+  }).format(num);
+};
+
 export const StockStats: React.FC<StockStatsProps> = ({ stock }) => {
+  if (!stock) {
+    return (
+      <Box sx={{ height: '40px', display: 'flex', alignItems: 'center', px: 2 }}>
+        <Typography variant="h6">Loading...</Typography>
+      </Box>
+    );
+  }
+
   return (
-    <Box 
-      className="h-8 flex items-center px-4 border-b border-gray-800"
-      sx={{ backgroundColor: 'background.paper' }}
-    >
-      <div className="flex items-center space-x-4">
-        <Typography variant="caption" color="text.secondary">
-          O {stock.price.toFixed(2)}
+    <Box sx={{ 
+      height: '40px', 
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'space-between',
+      px: 2,
+      borderBottom: 1,
+      borderColor: 'divider'
+    }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        <Typography variant="h6" sx={{ mr: 2 }}>{stock.symbol}</Typography>
+        <Typography variant="body2" color="text.secondary">
+          O {formatNumber(stock.open)}
         </Typography>
-        <Typography variant="caption" color="text.secondary">
-          H {stock.price.toFixed(2)}
+        <Typography variant="body2" color="text.secondary">
+          H {formatNumber(stock.high)}
         </Typography>
-        <Typography variant="caption" color="text.secondary">
-          L {stock.price.toFixed(2)}
+        <Typography variant="body2" color="text.secondary">
+          L {formatNumber(stock.low)}
         </Typography>
-        <Typography variant="caption" color="text.secondary">
-          C {stock.price.toFixed(2)}
+        <Typography variant="body2" color="text.secondary">
+          V {formatVolume(stock.volume)}
         </Typography>
-        <Typography variant="caption" color="text.disabled">
-          Vol {stock.volume.toLocaleString()}
-        </Typography>
-      </div>
+      </Box>
+      <Typography 
+        variant="h6" 
+        color={stock.close >= stock.open ? 'success.main' : 'error.main'}
+      >
+        {formatNumber(stock.close)}
+      </Typography>
     </Box>
   );
 }; 

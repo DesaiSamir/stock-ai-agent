@@ -1,19 +1,23 @@
 export interface StockData {
   symbol: string;
-  price: number;
-  volume: number;
   timestamp: Date;
-  change: number;
-  changePercent: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
 }
 
+export type TimeInterval = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '1d';
+
 export interface TradingSignal {
+  id: string;
   symbol: string;
-  type: 'BUY' | 'SELL' | 'HOLD';
-  confidence: number;
+  type: 'BUY' | 'SELL';
   price: number;
-  timestamp: Date;
+  confidence: number;
   reason: string;
+  timestamp: Date;
 }
 
 export interface NewsItem {
@@ -21,14 +25,16 @@ export interface NewsItem {
   title: string;
   content: string;
   source: string;
+  url: string;
+  sentiment: 'positive' | 'negative' | 'neutral';
   publishedAt: Date;
-  sentiment: number;
-  relatedStocks: string[];
+  symbol: string;
 }
 
 export interface AgentStatus {
+  id: string;
   name: string;
-  type: 'NEWS' | 'TICKER' | 'ANALYSIS' | 'TRADING';
-  status: 'ACTIVE' | 'INACTIVE' | 'ERROR';
-  lastUpdated: Date;
+  status: 'active' | 'inactive' | 'error';
+  lastUpdate: Date;
+  message?: string;
 } 

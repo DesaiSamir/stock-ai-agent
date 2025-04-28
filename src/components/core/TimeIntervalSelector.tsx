@@ -1,11 +1,12 @@
 import React from 'react';
 import { ToggleButton, ToggleButtonGroup } from '@mui/material';
+import type { TimeInterval } from '../../types/stock';
 
-const intervals = ['30s', '1m', '2m', '3m', '5m', '10m', '15m', '30m', '1h', '2h', '4h'];
+const intervals: TimeInterval[] = ['1m', '5m', '15m', '30m', '1h', '4h', '1d'];
 
 interface TimeIntervalSelectorProps {
-  value?: string;
-  onChange?: (interval: string) => void;
+  value?: TimeInterval;
+  onChange?: (interval: TimeInterval) => void;
 }
 
 export const TimeIntervalSelector: React.FC<TimeIntervalSelectorProps> = ({

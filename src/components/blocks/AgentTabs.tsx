@@ -72,7 +72,15 @@ export const AgentTabs: React.FC<AgentTabsProps> = ({
             <Box key={item.id} sx={{ mb: 2 }}>
               <Typography variant="subtitle2">{item.title}</Typography>
               <Typography variant="caption" color="text.secondary">
-                {item.source} - {new Date(item.publishedAt).toLocaleString()}
+                {item.source} - {new Intl.DateTimeFormat('en-US', {
+                  year: 'numeric',
+                  month: 'numeric',
+                  day: 'numeric',
+                  hour: 'numeric',
+                  minute: 'numeric',
+                  second: 'numeric',
+                  hour12: true,
+                }).format(new Date(item.publishedAt))}
               </Typography>
             </Box>
           ))}
@@ -102,7 +110,7 @@ export const AgentTabs: React.FC<AgentTabsProps> = ({
                 {agent.name} - {agent.status}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Last Updated: {new Date(agent.lastUpdated).toLocaleString()}
+                Last Updated: {new Date(agent.lastUpdate).toLocaleString()}
               </Typography>
             </Box>
           ))}

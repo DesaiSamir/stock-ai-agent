@@ -1,0 +1,72 @@
+import { StockData } from '../../types/stock';
+
+type TimeInterval = '1m' | '5m' | '15m' | '30m' | '1h' | '4h' | '1d';
+
+interface GenerateStockDataOptions {
+  symbol: string;
+  interval: TimeInterval;
+  basePrice?: number;
+  volatility?: number;
+  points?: number;
+}
+
+const INTERVAL_TO_MINUTES: Record<TimeInterval, number> = {
+  '1m': 1,
+  '5m': 5,
+  '15m': 15,
+  '30m': 30,
+  '1h': 60,
+  '4h': 240,
+  '1d': 1440,
+};
+
+/**
+ * Generates realistic sample stock data based on the given parameters
+ * @param options Configuration options for data generation
+ * @returns Array of StockData sorted by timestamp (newest first)
+ */
+export function generateStockData({
+  symbol,
+  interval,
+  basePrice = 100,
+  volatility = 0.02,
+  points = 100,
+}: GenerateStockDataOptions): StockData[] {
+  const data: StockData[] = [];
+  const minutesPerInterval = INTERVAL_TO_MINUTES[interval];
+  const now = new Date();
+  let currentPrice = basePrice;
+
+  // Generate data points from newest to oldest
+  for (let i = 0; i < points; i++) {
+    // Calculate timestamp for this point
+    const timestamp = new Date(now.getTime() - i * minutesPerInterval * 60 * 1000);
+    
+    // Generate random price movement
+    const priceChange = currentPrice * volatility * (Math.random() * 2 - 1);
+    const open = currentPrice;
+    const close = currentPrice + priceChange;
+    const high = Math.max(open, close) + Math.abs(priceChange) * Math.random();
+    const low = Math.min(open, close) - Math.abs(priceChange) * Math.random();
+    
+    // Update current price for next iteration
+    currentPrice = close;
+    
+    // Generate realistic volume
+    const baseVolume = Math.floor(100000 + Math.random() * 900000);
+    const volumeSpike = Math.random() < 0.1 ? Math.random() * 5 + 2 : 1; // 10% chance of volume spike
+    const volume = Math.floor(baseVolume * volumeSpike);
+
+    data.push({
+      symbol,
+      timestamp,
+      open,
+      high,
+      low,
+      close,
+      volume,
+    });
+  }
+
+  return data;
+} 
