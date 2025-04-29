@@ -40,14 +40,12 @@ export default function CallbackPage() {
         }
 
         const data = await response.json();
-
         // Send success message to parent window
         if (window.opener) {
           window.opener.postMessage(
             {
               type: "TRADESTATION_AUTH_SUCCESS",
-              accessToken: data.access_token,
-              profile: data.profile,
+              ...data,
             },
             window.location.origin
           );

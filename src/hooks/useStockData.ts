@@ -46,10 +46,15 @@ export function useStockData({
 
     // Handler for barchart data
     const handleBarData = (barData: FormattedBarData[]) => {
-      setData(barData.map(bar => ({
-        ...bar,
-        symbol
-      })));
+      setData(barData.map(bar => {
+        // Extract timestamp number from "/Date(1234567890000)/" format
+        const timestamp = parseInt(bar.timestamp.replace(/[^0-9]/g, ''));
+        return {
+          ...bar,
+          symbol,
+          date: new Date(timestamp)
+        };
+      }));
       setIsLoading(false);
     };
 

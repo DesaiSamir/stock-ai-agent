@@ -2,16 +2,19 @@ import { tradestationConfig } from './config';
 
 interface TokenInfo {
   access_token: string;
-  refresh_token: string;
   expires_in: number;
   userid: string;
   [key: string]: unknown;
 }
 
+export interface AuthHeaders {
+  authorization: string;
+  expiresIn: number;
+}
+
 class AuthService {
   private static instance: AuthService;
   private tokenInfo: TokenInfo | null = null;
-  private refreshedAt: Date | null = null;
   private expiresAt: Date | null = null;
 
   private constructor() {}
@@ -53,14 +56,10 @@ class AuthService {
     return tokenInfo;
   }
 
-  async refreshToken(): Promise<TokenInfo> {
-    if (!this.tokenInfo?.refresh_token) {
-      throw new Error('No refresh token available');
-    }
-
+  private async refreshExpiredToken(refreshToken: string): Promise<TokenInfo> {
     const payload = new URLSearchParams({
       grant_type: 'refresh_token',
-      refresh_token: this.tokenInfo.refresh_token,
+      refresh_token: refreshToken,
       client_id: tradestationConfig.clientId,
       client_secret: tradestationConfig.clientSecret
     });
@@ -73,7 +72,8 @@ class AuthService {
 
     if (!response.ok) {
       const error = await response.text();
-      throw new Error(`Failed to refresh token: ${error}`);
+      console.error('Failed to refresh token:', error);
+      throw new Error('AUTH_REFRESH_FAILED');
     }
 
     const tokenInfo: TokenInfo = await response.json();
@@ -84,22 +84,44 @@ class AuthService {
   private updateTokenInfo(tokenInfo: TokenInfo): void {
     if (tokenInfo.access_token) {
       this.tokenInfo = tokenInfo;
-      this.refreshedAt = new Date();
       this.expiresAt = new Date(Date.now() + tokenInfo.expires_in * 1000);
     }
   }
 
-  async getValidToken(): Promise<string> {
-    if (!this.tokenInfo || !this.expiresAt) {
-      throw new Error('No token available');
+  async validateAndRefreshTokens(headers: Headers): Promise<AuthHeaders> {
+    const authHeader = headers.get('Authorization');
+    const refreshTokenHeader = headers.get('Refresh-Token');
+    const tokenExpirationHeader = headers.get('Token-Expiration');
+
+    if (!authHeader) {
+      throw new Error('AUTH_NO_TOKEN');
+    }
+    if (!refreshTokenHeader) {
+      throw new Error('AUTH_NO_REFRESH_TOKEN');
+    }
+    
+    const refreshToken = refreshTokenHeader;
+    const tokenExpiration = tokenExpirationHeader ? parseInt(tokenExpirationHeader, 10) : null;
+
+    // Check if token is expired or will expire soon (5 min buffer)
+    const bufferTime = 1 * 60 * 1000; // 5 minutes in milliseconds
+    if (tokenExpiration && (tokenExpiration - Date.now() < bufferTime)) {
+      try {
+        const newTokenInfo = await this.refreshExpiredToken(refreshToken);
+        return {
+          authorization: `Bearer ${newTokenInfo.access_token}`,
+          expiresIn: newTokenInfo.expires_in
+        };
+      } catch (error) {
+        console.error('Failed to refresh token:', error);
+        throw new Error('AUTH_REFRESH_FAILED');
+      }
     }
 
-    // Refresh token if it expires in less than 5 minutes
-    if (this.expiresAt.getTime() - Date.now() < 5 * 60 * 1000) {
-      await this.refreshToken();
-    }
-
-    return this.tokenInfo.access_token;
+    return {
+      authorization: authHeader,
+      expiresIn: tokenExpiration ? tokenExpiration : Date.now() + 10 * 60 * 1000
+    };
   }
 
   getTokenInfo(): TokenInfo | null {

@@ -28,6 +28,8 @@ export async function POST(request: Request) {
     // Return the token info to the client
     return Response.json({
       access_token: tokenInfo.access_token,
+      refresh_token: tokenInfo.refresh_token,
+      expires_in: tokenInfo.expires_in,
       profile: {
         userid: tokenInfo.userid,
         // Add any other profile info you need

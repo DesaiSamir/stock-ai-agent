@@ -41,13 +41,25 @@ interface ChartData {
   ema200?: number;
 }
 
+// Add type for TradeStation data format
+interface TradeStationData {
+  TimeStamp: string;
+  Open: number;
+  High: number;
+  Low: number;
+  Close: number;
+  TotalVolume: number;
+}
+
+type StockDataWithTimeStamp = StockData | TradeStationData;
+
 interface CandleData extends ChartData {
   idx: { index: number };
   patternType?: "bullish" | "bearish";
 }
 
 interface ChartProps {
-  data: StockData[];
+  data: StockDataWithTimeStamp[];
   dateTimeFormat?: string;
   height?: number;
   ratio?: number;
@@ -66,14 +78,40 @@ const StockChart: React.FC<ChartProps> = ({
   const numberDisplayFormat = format(",");
 
   // Convert StockData to the format expected by react-financial-charts
-  const formattedData: ChartData[] = initialData.map((d) => ({
-    date: d.date,
-    open: d.open,
-    high: d.high,
-    low: d.low,
-    close: d.close,
-    volume: d.volume,
-  }));
+  const formattedData: ChartData[] = initialData
+    .filter((d): d is StockDataWithTimeStamp => {
+      if (!d) return false;
+      const timestamp = "date" in d ? d.date : d.TimeStamp;
+      if (!timestamp) return false;
+      const date = new Date(timestamp);
+      return !isNaN(date.getTime());
+    })
+    .map((d) => ({
+      date: new Date("date" in d ? d.date : d.TimeStamp),
+      open: Number("open" in d ? d.open : d.Open),
+      high: Number("high" in d ? d.high : d.High),
+      low: Number("low" in d ? d.low : d.Low),
+      close: Number("close" in d ? d.close : d.Close),
+      volume: Number("volume" in d ? d.volume : d.TotalVolume),
+    }))
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  // Don't proceed if we don't have valid data
+  if (formattedData.length === 0) {
+    return (
+      <div
+        style={{
+          width,
+          height,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        No data available
+      </div>
+    );
+  }
 
   const xScaleProvider =
     discontinuousTimeScaleProviderBuilder().inputDateAccessor(
@@ -134,25 +172,26 @@ const StockChart: React.FC<ChartProps> = ({
   // Modern shades
   const MODERN_GREEN = "#22c55e"; // Tailwind green-500
   const MODERN_RED = "#ef4444"; // Tailwind red-500
+  const MODERN_WHITE = "rgba(0,0,0,0)";
 
   const candelFillColor = (data: CandleData, seriesData: CandleData[] = []) => {
     const previous = seriesData[data.idx.index - 1];
-    if (!previous) return "white"; // Default for first candle
+    if (!previous) return MODERN_WHITE; // Default for first candle
     // Logic:
     // Green hollow: close > open && close > prev close
     // Green filled: close < open && close > prev close
     // Red hollow:   close > open && close < prev close
     // Red filled:   close < open && close < prev close
     if (data.close > data.open && data.close > previous.close) {
-      return "white"; // Green hollow
+      return MODERN_WHITE; // Green hollow
     } else if (data.close < data.open && data.close > previous.close) {
       return MODERN_GREEN; // Green filled
     } else if (data.close > data.open && data.close < previous.close) {
-      return "white"; // Red hollow
+      return MODERN_WHITE; // Red hollow
     } else if (data.close < data.open && data.close < previous.close) {
       return MODERN_RED; // Red filled
     }
-    return "white";
+    return MODERN_WHITE;
   };
 
   const candelStrokeColor = (
@@ -237,7 +276,7 @@ const StockChart: React.FC<ChartProps> = ({
           fill={(d) => candelFillColor(d, data)}
           stroke={(d) => candelStrokeColor(d, data)}
           widthRatio={0.6}
-          candleStrokeWidth={1}
+          candleStrokeWidth={1.5}
           wickStroke={(d) => candelStrokeColor(d, data)}
           yAccessor={candlestickYAccessor}
         />
