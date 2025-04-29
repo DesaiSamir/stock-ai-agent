@@ -1,9 +1,15 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useState, useMemo } from 'react';
-import { ThemeProvider as MuiThemeProvider, createTheme } from '@mui/material';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useMemo,
+  PropsWithChildren,
+} from "react";
+import { ThemeProvider as MuiThemeProvider, createTheme } from "@mui/material";
 
-type ThemeMode = 'light' | 'dark';
+type ThemeMode = "light" | "dark";
 
 interface ThemeContextType {
   mode: ThemeMode;
@@ -11,17 +17,17 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  mode: 'light',
+  mode: "light",
   toggleTheme: () => {},
 });
 
 export const useTheme = () => useContext(ThemeContext);
 
-export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [mode, setMode] = useState<ThemeMode>('light');
+export const ThemeProvider = ({ children }: PropsWithChildren) => {
+  const [mode, setMode] = useState<ThemeMode>("light");
 
   const toggleTheme = () => {
-    setMode((prevMode) => (prevMode === 'light' ? 'dark' : 'light'));
+    setMode((prevMode) => (prevMode === "light" ? "dark" : "light"));
   };
 
   const theme = useMemo(
@@ -29,29 +35,29 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createTheme({
         palette: {
           mode,
-          ...(mode === 'light'
+          ...(mode === "light"
             ? {
                 // Light mode colors
-                primary: { main: '#1976d2' },
+                primary: { main: "#1976d2" },
                 background: {
-                  default: '#f5f5f5',
-                  paper: '#ffffff',
+                  default: "#f5f5f5",
+                  paper: "#ffffff",
                 },
                 text: {
-                  primary: '#1a1a1a',
-                  secondary: '#666666',
+                  primary: "#1a1a1a",
+                  secondary: "#666666",
                 },
               }
             : {
                 // Dark mode colors
-                primary: { main: '#90caf9' },
+                primary: { main: "#90caf9" },
                 background: {
-                  default: '#131722',
-                  paper: '#1e222d',
+                  default: "#131722",
+                  paper: "#1e222d",
                 },
                 text: {
-                  primary: '#ffffff',
-                  secondary: '#b3b3b3',
+                  primary: "#ffffff",
+                  secondary: "#b3b3b3",
                 },
               }),
         },
@@ -64,4 +70,4 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       <MuiThemeProvider theme={theme}>{children}</MuiThemeProvider>
     </ThemeContext.Provider>
   );
-}; 
+};

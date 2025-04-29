@@ -66,7 +66,7 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
   }, [isDragging, handleMouseMove, handleMouseUp]);
 
   return (
-    <Box sx={{ display: "flex", height: "100vh" }}>
+    <Box sx={{ display: "flex", height: "100vh", overflow: "hidden" }}>
       <AgentToolbar />
 
       <Box
@@ -76,6 +76,7 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
+          position: "relative",
         }}
         onMouseMove={handleMouseMove}
       >
@@ -84,8 +85,10 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
           sx={{
             height: `${chartHeight}%`,
             minHeight: "20%",
-            flexShrink: 0,
+            maxHeight: "80%",
+            width: "100%",
             position: "relative",
+            overflow: "hidden",
           }}
         >
           <StockChart symbol="AAPL" />
@@ -114,8 +117,10 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
           sx={{
             height: `${100 - chartHeight}%`,
             minHeight: "20%",
-            flexShrink: 0,
+            maxHeight: "80%",
+            width: "100%",
             position: "relative",
+            overflow: "hidden",
           }}
         >
           <AgentTabs

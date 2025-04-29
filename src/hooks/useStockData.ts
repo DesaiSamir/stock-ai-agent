@@ -1,10 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { StockData, TimeInterval } from '../types/stock';
+import type { TimeInterval } from '../types/stock';
 import { http, type FormattedBarData } from '@/utils/http';
 import type { StreamPayload } from '@/utils/http';
-import { useTradeStationStore } from '@/store/tradestation';
+import type { QuoteData } from '@/types/tradestation';
+import { useMarketDataStore } from '@/store/market-data';
+import { useSessionStore } from '@/store/session';
 
 interface UseStockDataOptions {
   symbol: string;
@@ -17,14 +19,18 @@ export function useStockData({
   interval = '1m',
   isPreMarket = false
 }: UseStockDataOptions) {
-  const [data, setData] = useState<StockData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { isConnected } = useTradeStationStore();
-
+  const { 
+    updateBarData,
+    updateQuote
+  } = useMarketDataStore();
+  const { isConnected } = useSessionStore();
+  // Barchart data effect
   useEffect(() => {
     if (!isConnected) {
       setError('Not connected to TradeStation');
+      setIsLoading(false);
       return;
     }
 
@@ -35,18 +41,16 @@ export function useStockData({
     const unit = interval.endsWith('m') ? 'Minute' : 'Daily';
     const intervalValue = parseInt(interval);
     
-    // Create barchart request
-    const barchartRequest = http.createBarchartRequest(symbol, intervalValue, unit, isPreMarket);
-    const url = `/v2/stream/barchart/${barchartRequest.symbol}/${barchartRequest.interval}/${barchartRequest.unit}/${barchartRequest.barsBack}/${barchartRequest.lastDate}${barchartRequest.sessionTemplate ? `?SessionTemplate=${barchartRequest.sessionTemplate}` : ''}`;
-    
     const payload: StreamPayload = {
-      method: 'STREAM',
-      url
+      symbol,
+      interval: intervalValue,
+      unit,
+      isPreMarket
     };
 
     // Handler for barchart data
     const handleBarData = (barData: FormattedBarData[]) => {
-      setData(barData.map(bar => {
+      const formattedData = barData.map(bar => {
         // Extract timestamp number from "/Date(1234567890000)/" format
         const timestamp = parseInt(bar.timestamp.replace(/[^0-9]/g, ''));
         return {
@@ -54,58 +58,86 @@ export function useStockData({
           symbol,
           date: new Date(timestamp)
         };
-      }));
+      });
+      updateBarData(symbol, formattedData);
       setIsLoading(false);
     };
 
+    let mounted = true;
+
     // Start streaming data
-    http.getBarChartData(payload, handleBarData)
+    http.getBarChartDataStream(payload, handleBarData)
+      .then(() => {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      })
       .catch(err => {
-        console.error('Failed to fetch bar data:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch bar data');
-        setIsLoading(false);
+        if (mounted) {
+          console.error('Failed to fetch bar data:', err);
+          setError(err instanceof Error ? err.message : 'Failed to fetch bar data');
+          setIsLoading(false);
+        }
       });
 
     // Cleanup
     return () => {
+      mounted = false;
       http.clearBarChartInterval();
-      http.clearQuoteInterval();
     };
-  }, [symbol, interval, isPreMarket, isConnected]);
+  }, [symbol, interval, isPreMarket, isConnected, updateBarData]);
 
-  // Quote data streaming
+  // Quote data polling
   useEffect(() => {
-    if (!isConnected) return;
+    if (!isConnected) {
+      setError('Not connected to TradeStation');
+      return;
+    }
 
-    const handleQuoteData = (quote: { Last: number; Volume: number }) => {
-      if (!quote) return;
+    setError(null);
 
-      setData(prevData => {
-        if (prevData.length === 0) return prevData;
+    const handleQuoteData = (quoteData: QuoteData) => {
+      if (!quoteData) return;
 
-        const latestCandle = {
-          ...prevData[0],
-          close: quote.Last,
-          high: Math.max(prevData[0].high, quote.Last),
-          low: Math.min(prevData[0].low, quote.Last),
-          volume: quote.Volume
-        };
+      // Only update if we have a timestamp and it's current
+      if (quoteData.TradeTime) {
+        const quoteTime = new Date(quoteData.TradeTime).getTime();
+        const now = Date.now();
+        const fiveMinutesAgo = now - (5 * 60 * 1000);
+        
+        // Skip if quote is older than 5 minutes
+        if (quoteTime < fiveMinutesAgo) {
+          return;
+        }
+      }
 
-        return [latestCandle, ...prevData.slice(1)];
-      });
+      updateQuote(symbol, quoteData);
     };
 
-    // Start quote streaming
-    http.getQuoteDataStream(symbol, handleQuoteData);
+    let mounted = true;
+
+    // Start quote polling
+    http.startQuotePolling(symbol, handleQuoteData)
+      .then(() => {
+        if (mounted) {
+          setError(null);
+        }
+      })
+      .catch(err => {
+        if (mounted) {
+          console.error('Failed to start quote polling:', err);
+          setError(err instanceof Error ? err.message : 'Failed to start quote polling');
+        }
+      });
 
     // Cleanup
     return () => {
+      mounted = false;
       http.clearQuoteInterval();
     };
-  }, [symbol, isConnected]);
+  }, [symbol, isConnected, updateQuote]);
 
   return {
-    data,
     isLoading,
     error
   };

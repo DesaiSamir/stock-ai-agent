@@ -1,17 +1,18 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { ThemeProvider } from "../theme/ThemeContext";
-import { ThemeToggle } from "./core/ThemeToggle";
+import { ThemeProvider } from "@/components/core/ThemeProvider";
+import { ThemeToggle } from "@/components/core/ThemeToggle";
 import { AppBar, Toolbar, Typography, Box, Button } from "@mui/material";
-import { useTradeStationStore } from "@/store/tradestation";
+
+import { useSessionStore } from "@/store/session";
 
 interface AppShellProps {
   children: React.ReactNode;
 }
 
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
-  const { connect, isConnected, isConnecting } = useTradeStationStore();
+  const { connect, isConnected, isConnecting } = useSessionStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {

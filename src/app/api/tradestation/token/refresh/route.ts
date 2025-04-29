@@ -6,7 +6,6 @@ export async function POST(request: Request) {
     
     return Response.json({
       access_token: validatedHeaders.authorization.replace('Bearer ', ''),
-      refresh_token: validatedHeaders.refreshToken,
       expires_in: validatedHeaders.expiresIn
     });
   } catch (error) {

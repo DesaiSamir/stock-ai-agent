@@ -1,16 +1,16 @@
-import { useTradeStationStore } from '@/store/tradestation';
+'use client';
+
+import { useSessionStore } from '@/store/session';
 import type { BarData, BarchartRequest, TimeUnit, QuoteData } from '@/types/tradestation';
 import axios from 'axios';
-import { tradestationService } from '@/app/api/services/tradestation/tradingService';
 import type { StreamData } from '@/app/api/services/tradestation/tradingService';
 
 export interface StreamPayload {
-  method: 'STREAM' | 'GET' | 'POST';
-  url: string;
+  symbol: string;
+  interval: number;
+  unit: TimeUnit;
+  isPreMarket?: boolean;
 }
-
-const barChartTimer = 1000;
-let quoteTimer: NodeJS.Timeout;
 
 export interface FormattedBarData {
   timestamp: string;
@@ -22,23 +22,30 @@ export interface FormattedBarData {
 }
 
 export const http = {
+  // Add flags to track if fetches are in progress
+  isBarFetching: false,
+  isQuoteFetching: false,
+
+  // Add timers for polling
+  barChartTimer: undefined as NodeJS.Timeout | undefined,
+  quoteTimer: undefined as NodeJS.Timeout | undefined,
+
   clearBarChartInterval() {
-    if (barChartTimer) {
-      clearInterval(barChartTimer);
-    }
-    // Also stop the WebSocket stream
-    const store = useTradeStationStore.getState();
-    if (store.currentSymbol) {
-      tradestationService.stopStream(store.currentSymbol);
+    if (this.barChartTimer) {
+      clearInterval(this.barChartTimer);
+      this.barChartTimer = undefined;
     }
   },
 
   clearQuoteInterval() {
-    clearInterval(quoteTimer);
+    if (this.quoteTimer) {
+      clearInterval(this.quoteTimer);
+      this.quoteTimer = undefined;
+    }
   },
 
   getRefreshInterval() {
-    return this.isRegularSessionTime() ? 3000 : 10000;
+    return this.isRegularSessionTime() ? 1000 : 10000;
   },
 
   isRegularSessionTime() {
@@ -53,62 +60,131 @@ export const http = {
   },
 
   async getQuoteData(symbol: string, callback: (data: QuoteData) => void) {
-    const quoteData = await this.get<QuoteData[]>(`/api/tradestation/quote/${symbol}`);
-    if (quoteData && quoteData.length > 0) {
-      callback(quoteData[0]);
-    }
-  },
+    // If a quote fetch is already in progress, skip this one
+    if (this.isQuoteFetching) return;
 
-  async getQuoteDataStream(symbol: string, callback: (data: QuoteData) => void) {
-    clearInterval(quoteTimer);
-    
-    quoteTimer = setInterval(async () => {
+    try {
+      this.isQuoteFetching = true;
+      const store = useSessionStore.getState();
+      
+      // Validate/refresh tokens before proceeding
+      const isValid = await this.validateTokens();
+      if (!isValid || !store.accessToken) {
+        throw new Error('Failed to validate access token');
+      }
+
       if (this.isRegularSessionTime()) {
-        const quoteData = await this.get<QuoteData[]>(`/api/tradestation/quote/${symbol}`);
-        if (quoteData && quoteData.length > 0) {
-          callback(quoteData[0]);
+        const response = await axios.get(`/api/tradestation/quote`, {
+          params: {
+            symbols: symbol,
+            token: store.accessToken
+          }
+        });
+        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+          callback(response.data[0]);
         }
       }
-    }, this.getRefreshInterval());
-  },
-
-  createBarchartRequest(symbol: string, interval: number, unit: TimeUnit, isPreMarket = false): BarchartRequest {
-    return {
-      symbol,
-      interval,
-      unit,
-      barsBack: 600,
-      lastDate: new Date().toISOString(),
-      ...(isPreMarket && { sessionTemplate: 'USEQPreAndPost' })
-    };
-  },
-
-  async getBarChartData(payload: StreamPayload, callback: (data: FormattedBarData[]) => void) {
-    // Get initial data
-    const barData = await this.send('POST', '/api/tradestation/barchart', payload);
-    if (barData) {
-      callback(this.formatBarDataArray(barData));
+    } catch (error) {
+      console.error('Failed to fetch quote data:', error);
+      throw error;
+    } finally {
+      this.isQuoteFetching = false;
     }
+  },
 
-    // Start WebSocket stream for real-time updates
-    const store = useTradeStationStore.getState();
-    if (store.currentSymbol) {
-      tradestationService.startStream(store.currentSymbol, (streamData: StreamData) => {
-        callback([this.formatBarDataSingle(streamData)]);
-      });
+  async startQuotePolling(symbol: string, callback: (data: QuoteData) => void) {
+    // Clear any existing polling
+    this.clearQuoteInterval();
+    
+    try {
+      // Initial fetch
+      await this.getQuoteData(symbol, callback);
+
+      // Clear any existing timer before setting a new one
+      if (this.quoteTimer) {
+        clearInterval(this.quoteTimer);
+      }
+
+      // Setup polling every second
+      this.quoteTimer = setInterval(async () => {
+        await this.getQuoteData(symbol, callback);
+      }, 1000);
+
+      // Return a resolved promise to indicate initial data is loaded
+      return Promise.resolve();
+    } catch (error) {
+      console.error('Failed to setup quote polling:', error);
+      throw error;
     }
   },
 
   async getBarChartDataStream(payload: StreamPayload, callback: (data: FormattedBarData[]) => void) {
-    // Clear any existing streams/timers
+    // Clear any existing timers
     this.clearBarChartInterval();
     
-    // Start WebSocket stream
-    const store = useTradeStationStore.getState();
-    if (store.currentSymbol) {
-      tradestationService.startStream(store.currentSymbol, (streamData: StreamData) => {
-        callback([this.formatBarDataSingle(streamData)]);
-      });
+    try {
+      const store = useSessionStore.getState();
+      
+      // Validate/refresh tokens before proceeding
+      const isValid = await this.validateTokens();
+      if (!isValid || !store.accessToken) {
+        throw new Error('Failed to validate access token');
+      }
+
+      // Function to fetch data
+      const fetchData = async () => {
+        // If a bar fetch is already in progress, skip this one
+        if (this.isBarFetching) return;
+
+        try {
+          this.isBarFetching = true;
+          
+          if (this.isRegularSessionTime()) {
+            const barchartRequest = this.createBarchartRequest(
+              payload.symbol,
+              payload.interval,
+              payload.unit,
+              payload.isPreMarket
+            );
+            
+            const url = `/v2/stream/barchart/${barchartRequest.symbol}/${barchartRequest.interval}/${barchartRequest.unit}/${barchartRequest.barsBack}/${barchartRequest.lastDate}${barchartRequest.sessionTemplate ? `?SessionTemplate=${barchartRequest.sessionTemplate}` : ''}`;
+            
+            const response = await axios.get(`/api/tradestation/barchart`, {
+              params: {
+                url: url,
+                token: store.accessToken
+              }
+            });
+            
+            if (Array.isArray(response.data)) {
+              callback(this.formatBarDataArray(response.data));
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch bar data:', error);
+          throw error;
+        } finally {
+          this.isBarFetching = false;
+        }
+      };
+
+      // Initial fetch
+      await fetchData();
+
+      // Clear any existing timer before setting a new one
+      if (this.barChartTimer) {
+        clearInterval(this.barChartTimer);
+      }
+
+      // Setup polling every second
+      this.barChartTimer = setInterval(fetchData, 1000);
+
+      // Return a resolved promise to indicate initial data is loaded
+      return Promise.resolve();
+
+    } catch (error) {
+      console.error('Failed to setup barchart polling:', error);
+      throw error;
     }
   },
 
@@ -145,7 +221,7 @@ export const http = {
         error.message === 'AUTH_REFRESH_FAILED' ||
         error.message === 'AUTH_INVALID' ||
         (axios.isAxiosError(error) && error.response?.status === 401)) {
-      const store = useTradeStationStore.getState();
+      const store = useSessionStore.getState();
       store.disconnect();
       throw new Error('Session expired. Please log in again.');
     }
@@ -153,7 +229,7 @@ export const http = {
   },
 
   async validateTokens() {
-    const store = useTradeStationStore.getState();
+    const store = useSessionStore.getState();
     if (!store.isConnected || !store.accessToken || !store.refreshToken) {
       return false;
     }
@@ -202,7 +278,7 @@ export const http = {
   },
 
   async send(method: string, url: string, payload?: unknown) {
-    const store = useTradeStationStore.getState();
+    const store = useSessionStore.getState();
     if (!store.isConnected) {
       throw new Error('Not connected to TradeStation');
     }
@@ -257,7 +333,24 @@ export const http = {
     low: data.Low,
     close: data.Close,
     volume: data.TotalVolume
-  })
+  }),
+
+  createBarchartRequest(symbol: string, interval: number, unit: TimeUnit, isPreMarket = false): BarchartRequest {
+    const lastDate = new Date().toLocaleDateString('en-US', { 
+      month: '2-digit', 
+      day: '2-digit', 
+      year: 'numeric' 
+    }).replace(/\//g, '-');
+
+    return {
+      symbol,
+      interval,
+      unit,
+      barsBack: 600,
+      lastDate,
+      ...(isPreMarket && { sessionTemplate: 'USEQPreAndPost' })
+    };
+  }
 };
 
-export default http; 
+export default http;

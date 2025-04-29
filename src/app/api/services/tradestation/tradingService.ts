@@ -20,10 +20,19 @@ export interface StreamData {
 }
 
 type StreamCallback = (data: StreamData) => void;
+type StreamController = {
+  enqueue: (data: Uint8Array) => void;
+  error: (error: Error) => void;
+};
 
 class TradestationService {
-  private websocket: WebSocket | null = null;
-  private streamCallbacks: Map<string, StreamCallback> = new Map();
+  private streamCallbacks: Map<string, StreamCallback>;
+  private streamControllers: Map<string, StreamController>;
+
+  constructor() {
+    this.streamCallbacks = new Map();
+    this.streamControllers = new Map();
+  }
 
   private parseStreamData(data: string): StreamData | null {
     try {
@@ -34,67 +43,80 @@ class TradestationService {
     }
   }
 
-  async startStream(symbol: string, callback: StreamCallback) {
-    if (!this.websocket) {
-      // Convert REST URL to WebSocket URL
-      const wsUrl = tradestationConfig.baseUrlSim.replace('https://', 'wss://');
-      this.websocket = new WebSocket(`${wsUrl}/v2/stream/barchart/${symbol}`);
+  async getStream(url: string, headers: Headers, controller: StreamController) {
+    try {
+      const response = await axios.get(tradestationConfig.baseUrlSim + url, {
+        headers: {
+          'Accept': 'application/vnd.tradestation.streams+json',
+          'Authorization': headers.get('Authorization'),
+        },
+        responseType: 'stream'
+      });
 
-      this.websocket.onmessage = (event) => {
-        const data = this.parseStreamData(event.data);
-        if (data) {
-          // Call the callback for this symbol if it exists
-          const cb = this.streamCallbacks.get(symbol);
-          if (cb) {
-            cb(data);
+      // Process the stream
+      let buffer = '';
+      const encoder = new TextEncoder();
+
+      response.data.on('data', (chunk: Buffer) => {
+        // Convert chunk to string and add to buffer
+        buffer += chunk.toString();
+
+        // Process complete lines
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+        // Process and send complete lines to client
+        const validLines = lines
+          .filter(line => line.trim())
+          .map(line => {
+            // Check for END marker
+            if (line.trim() === 'END') {
+              // Restart the stream
+              console.log('Stream ended, restarting...');
+              this.getStream(url, headers, controller);
+              return null;
+            }
+            try {
+              return JSON.parse(line);
+            } catch (e) {
+              console.error('Failed to parse line:', line, e);
+              return null;
+            }
+          })
+          .filter(line => line !== null);
+
+        if (validLines.length > 0) {
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(validLines)}\n\n`));
+        }
+      });
+
+      response.data.on('end', () => {
+        // Process any remaining data
+        if (buffer.trim()) {
+          // Check for END marker in final buffer
+          if (buffer.trim() === 'END') {
+            console.log('Stream ended in final buffer, restarting...');
+            this.getStream(url, headers, controller);
+            return;
+          }
+          try {
+            const data = JSON.parse(buffer);
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify([data])}\n\n`));
+          } catch (e) {
+            console.error('Failed to parse final buffer:', buffer, e);
           }
         }
-      };
+      });
 
-      this.websocket.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        this.stopStream(symbol);
-      };
+      response.data.on('error', (error: Error) => {
+        console.error('Stream error:', error);
+        controller.error(error);
+      });
 
-      this.websocket.onclose = () => {
-        console.log('WebSocket connection closed');
-        this.websocket = null;
-        // Attempt to reconnect after a delay
-        setTimeout(() => {
-          if (this.streamCallbacks.size > 0) {
-            this.startStream(symbol, callback);
-          }
-        }, 5000);
-      };
+    } catch (error) {
+      console.error('Failed to setup stream:', error);
+      controller.error(error instanceof Error ? error : new Error('Stream setup failed'));
     }
-
-    // Store the callback for this symbol
-    this.streamCallbacks.set(symbol, callback);
-  }
-
-  stopStream(symbol: string) {
-    this.streamCallbacks.delete(symbol);
-    
-    // If no more active streams, close the WebSocket
-    if (this.streamCallbacks.size === 0 && this.websocket) {
-      this.websocket.close();
-      this.websocket = null;
-    }
-  }
-
-  private parseStreamResponse(data: string): StreamData[] {
-    // Split by newline and remove empty lines and 'END' marker
-    const lines = data.split('\r\n').filter(line => line && line !== 'END');
-    
-    // Parse each line as JSON
-    return lines.map(line => {
-      try {
-        return JSON.parse(line) as StreamData;
-      } catch (error) {
-        console.error('Failed to parse line:', line, error);
-        return null;
-      }
-    }).filter((item): item is StreamData => item !== null);
   }
 
   async get(url: string, headers: Headers) {
@@ -102,8 +124,8 @@ class TradestationService {
       const response = await axios.get(tradestationConfig.baseUrlSim + url, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': headers.get('Authorization'),
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          'Authorization': headers.get('Authorization')
         }
       });
 
@@ -126,13 +148,28 @@ class TradestationService {
     }
   }
 
+  private parseStreamResponse(data: string): StreamData[] {
+    // Split by newline and remove empty lines and 'END' marker
+    const lines = data.split('\r\n').filter(line => line && line !== 'END');
+    
+    // Parse each line as JSON
+    return lines.map(line => {
+      try {
+        return JSON.parse(line) as StreamData;
+      } catch (error) {
+        console.error('Failed to parse line:', line, error);
+        return null;
+      }
+    }).filter((item): item is StreamData => item !== null);
+  }
+
   async post(url: string, data: unknown, headers: Headers) {
     try {
       const response = await axios.post(url, data, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': headers.get('Authorization'),
-          'Accept': 'application/json'
+          'Accept': 'application/vnd.tradestation.streams+json',
+          'Authorization': headers.get('Authorization')
         }
       });
 
