@@ -16,8 +16,9 @@ export const cookieUtils = {
       if (value !== null && value !== undefined) {
         Cookies.set(`${COOKIE_PREFIX}${key}`, String(value), {
           expires: COOKIE_EXPIRY,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
+          secure: true,
+          sameSite: 'strict',
+          path: '/',
         });
       }
     });
@@ -34,7 +35,11 @@ export const cookieUtils = {
 
   clearAuthCookies: () => {
     ['accessToken', 'refreshToken', 'expiresIn', 'tokenExpiration'].forEach(key => {
-      Cookies.remove(`${COOKIE_PREFIX}${key}`);
+      Cookies.remove(`${COOKIE_PREFIX}${key}`, {
+        path: '/',
+        secure: true,
+        sameSite: 'strict'
+      });
     });
   }
 }; 

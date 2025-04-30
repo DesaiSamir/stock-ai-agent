@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "@/app/globals.css";
-import { AppShell } from '@/components/AppShell';
+import { AppShell } from "@/components/AppShell";
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ["latin"],
-  variable: '--font-inter'
+  variable: "--font-inter",
 });
 
 export const metadata: Metadata = {

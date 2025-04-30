@@ -40,6 +40,7 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     if (isDragging) {
       window.addEventListener("mouseup", handleMouseUp);
       return () => {
@@ -50,6 +51,7 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
+      if (typeof window === "undefined") return;
       if (isDragging) {
         const containerHeight = window.innerHeight;
         const newHeight = (e.clientY / containerHeight) * 100;

@@ -8,12 +8,12 @@ import { Box } from "@mui/material";
 import { useStockData } from "../../hooks/useStockData";
 import { useMarketDataStore } from "@/store/market-data";
 import type { QuoteData } from "@/types/tradestation";
-import dynamic from "next/dynamic";
+import { DynamicChart } from "@/components/core/DynamicChart.client";
 
 // Import chart component dynamically with no SSR
-const DynamicChart = dynamic(() => import("../core/DynamicChart.client"), {
-  ssr: false,
-});
+// const DynamicChart = dynamic(() => import("../core/DynamicChart.client"), {
+//   ssr: false,
+// });
 
 interface DynamicStockChartProps {
   symbol: string;
@@ -72,7 +72,7 @@ export const DynamicStockChart: React.FC<DynamicStockChartProps> = ({
   }, [mounted]);
 
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || typeof window === "undefined") return;
 
     updateDimensions();
     const resizeObserver = new ResizeObserver(updateDimensions);
@@ -94,7 +94,7 @@ export const DynamicStockChart: React.FC<DynamicStockChartProps> = ({
   }, []);
 
   // Return loading state only after mounting to avoid hydration mismatch
-  if (!mounted) {
+  if (!mounted || typeof window === "undefined") {
     return null;
   }
 

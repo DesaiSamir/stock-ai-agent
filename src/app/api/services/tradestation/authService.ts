@@ -56,7 +56,7 @@ class AuthService {
     return tokenInfo;
   }
 
-  private async refreshExpiredToken(refreshToken: string): Promise<TokenInfo> {
+  async refreshExpiredToken(refreshToken: string): Promise<TokenInfo> {
     const payload = new URLSearchParams({
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
@@ -86,42 +86,6 @@ class AuthService {
       this.tokenInfo = tokenInfo;
       this.expiresAt = new Date(Date.now() + tokenInfo.expires_in * 1000);
     }
-  }
-
-  async validateAndRefreshTokens(headers: Headers): Promise<AuthHeaders> {
-    const authHeader = headers.get('Authorization');
-    const refreshTokenHeader = headers.get('Refresh-Token');
-    const tokenExpirationHeader = headers.get('Token-Expiration');
-
-    if (!authHeader) {
-      throw new Error('AUTH_NO_TOKEN');
-    }
-    if (!refreshTokenHeader) {
-      throw new Error('AUTH_NO_REFRESH_TOKEN');
-    }
-    
-    const refreshToken = refreshTokenHeader;
-    const tokenExpiration = tokenExpirationHeader ? parseInt(tokenExpirationHeader, 10) : null;
-
-    // Check if token is expired or will expire soon (5 min buffer)
-    const bufferTime = 1 * 60 * 1000; // 5 minutes in milliseconds
-    if (tokenExpiration && (tokenExpiration - Date.now() < bufferTime)) {
-      try {
-        const newTokenInfo = await this.refreshExpiredToken(refreshToken);
-        return {
-          authorization: `Bearer ${newTokenInfo.access_token}`,
-          expiresIn: newTokenInfo.expires_in
-        };
-      } catch (error) {
-        console.error('Failed to refresh token:', error);
-        throw new Error('AUTH_REFRESH_FAILED');
-      }
-    }
-
-    return {
-      authorization: authHeader,
-      expiresIn: tokenExpiration ? tokenExpiration : Date.now() + 10 * 60 * 1000
-    };
   }
 
   getTokenInfo(): TokenInfo | null {

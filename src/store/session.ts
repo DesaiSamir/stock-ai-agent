@@ -104,6 +104,7 @@ interface SessionState extends StoredSessionState {
   setRefreshToken: (token: string) => void;
   setTokenExpiration: (expiration: number) => void;
   setError: (error: string | null) => void;
+  setConnected: (connected: boolean) => void;
   isTokenExpired: () => boolean;
 }
 
@@ -135,82 +136,86 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         throw new Error('Popup blocked. Please enable popups for this site.');
       }
 
-      let isHandlingAuth = false; // Flag to prevent multiple handlers
-
-      // Listen for messages from popup
-      const handleMessage = async (event: MessageEvent) => {
-        if (event.origin !== window.location.origin) return;
-        
-        if (event.data?.type === 'TRADESTATION_AUTH_SUCCESS' && !isHandlingAuth) {
-          isHandlingAuth = true; // Set flag to prevent multiple handling
+      // Create a promise that will resolve when auth is complete
+      return new Promise<void>((resolve, reject) => {
+        let isHandlingAuth = false;
+        const timeoutId = setTimeout(() => {
           window.removeEventListener('message', handleMessage);
-          
-          const newState = {
-            isConnected: true,
-            isConnecting: false,
-            error: null,
-            accessToken: event.data.access_token,
-            refreshToken: event.data.refresh_token,
-            userProfile: event.data.profile,
-            expiresIn: event.data.expires_in,
-            tokenExpiration: Date.now() + (event.data.expires_in * 1000)
-          };
-          
-          set(newState);
-          saveToStorage(newState);
-          
-          if (popup) {
-            popup.close(); // Close the popup after successful auth
-          }
-        }
+          if (popup && !popup.closed) popup.close();
+          reject(new Error('Authentication timed out'));
+        }, 300000); // 5 minute timeout
 
-        if (event.data?.type === 'TRADESTATION_AUTH_ERROR' && !isHandlingAuth) {
-          isHandlingAuth = true; // Set flag to prevent multiple handling
-          window.removeEventListener('message', handleMessage);
+        // Listen for messages from popup
+        const handleMessage = async (event: MessageEvent) => {
+          if (event.origin !== window.location.origin || typeof window === 'undefined') return;
           
-          const newState = {
-            isConnected: false,
-            isConnecting: false,
-            error: event.data.error,
-            accessToken: null,
-            refreshToken: null,
-            userProfile: null,
-            expiresIn: null,
-            tokenExpiration: null
-          };
-          
-          set(newState);
-          clearStorage();
-          
-          if (popup) {
-            popup.close(); // Close the popup after error
+          if (event.data?.type === 'TRADESTATION_AUTH_SUCCESS' && !isHandlingAuth) {
+            isHandlingAuth = true;
+            clearTimeout(timeoutId);
+            window.removeEventListener('message', handleMessage);
+            
+            const newState = {
+              isConnected: true,
+              isConnecting: false,
+              error: null,
+              accessToken: event.data.access_token,
+              refreshToken: event.data.refresh_token,
+              userProfile: event.data.profile,
+              expiresIn: event.data.expires_in,
+              tokenExpiration: Date.now() + (event.data.expires_in * 1000)
+            };
+            
+            set(newState);
+            saveToStorage(newState);
+            
+            if (popup && !popup.closed) popup.close();
+            resolve();
           }
-        }
-      };
 
-      window.addEventListener('message', handleMessage);
+          if (event.data?.type === 'TRADESTATION_AUTH_ERROR' && !isHandlingAuth) {
+            isHandlingAuth = true;
+            clearTimeout(timeoutId);
+            window.removeEventListener('message', handleMessage);
+            
+            const errorMessage = event.data.error || 'Authentication failed';
+            set({ 
+              isConnecting: false,
+              error: errorMessage,
+            });
+            
+            if (popup && !popup.closed) popup.close();
+            reject(new Error(errorMessage));
+          }
+        };
+
+        window.addEventListener('message', handleMessage);
+
+        // Also handle popup closing
+        const checkPopup = setInterval(() => {
+          if (popup.closed && !isHandlingAuth) {
+            clearInterval(checkPopup);
+            clearTimeout(timeoutId);
+            window.removeEventListener('message', handleMessage);
+            if (!isHandlingAuth) {
+              set({ isConnecting: false, error: 'Authentication window was closed' });
+              reject(new Error('Authentication window was closed'));
+            }
+          }
+        }, 500);
+      });
       
     } catch (error) {
       console.error('Failed to initiate TradeStation login:', error);
-      const newState = {
-        isConnected: false,
+      set({ 
         isConnecting: false,
         error: error instanceof Error ? error.message : 'Failed to connect',
-        accessToken: null,
-        refreshToken: null,
-        userProfile: null,
-        expiresIn: null,
-        tokenExpiration: null
-      };
-      
-      set(newState);
-      clearStorage();
+      });
+      throw error;
     }
   },
 
   disconnect: () => {
-    clearStorage();
-    set({ 
+    const newState = {
       isConnected: false,
       isConnecting: false,
       error: null,
@@ -219,7 +224,17 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       userProfile: null,
       expiresIn: null,
       tokenExpiration: null
-    });
+    };
+    set(newState);
+    clearStorage(); // Only clear storage on explicit disconnect
+  },
+
+  setConnected: (connected) => {
+    const newState = { ...get(), isConnected: connected };
+    set(newState);
+    if (connected) {
+      saveToStorage(newState);
+    }
   },
 
   setAccessToken: (token, expiresIn) => {

@@ -54,6 +54,7 @@ export const StockChart: React.FC<StockChartProps> = ({ symbol }) => {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
     updateDimensions();
 
     const resizeObserver = new ResizeObserver(updateDimensions);

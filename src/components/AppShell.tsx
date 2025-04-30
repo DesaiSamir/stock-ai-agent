@@ -20,7 +20,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   }, []);
 
   // Don't render connection-dependent UI until after hydration
-  if (!mounted) {
+  if (!mounted || typeof window === "undefined") {
     return (
       <Box sx={{ height: "100vh", display: "flex", flexDirection: "column" }}>
         <AppBar position="static" color="default" elevation={1}>

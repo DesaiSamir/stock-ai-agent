@@ -2,11 +2,20 @@ import { authService } from '@/app/api/services/tradestation/authService';
 
 export async function POST(request: Request) {
   try {
-    const validatedHeaders = await authService.validateAndRefreshTokens(request.headers);
+    const refreshToken = request.headers.get('Refresh-Token');
+    
+    if (!refreshToken) {
+      return Response.json(
+        { error: 'AUTH_NO_REFRESH_TOKEN' },
+        { status: 401 }
+      );
+    }
+
+    const newTokenInfo = await authService.refreshExpiredToken(refreshToken);
     
     return Response.json({
-      access_token: validatedHeaders.authorization.replace('Bearer ', ''),
-      expires_in: validatedHeaders.expiresIn
+      access_token: newTokenInfo.access_token,
+      expires_in: newTokenInfo.expires_in
     });
   } catch (error) {
     console.error('Token refresh error:', error);

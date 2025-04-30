@@ -26,11 +26,10 @@ const INTERVAL_TO_MINUTES: Record<TimeInterval, number> = {
  * @returns Array of StockData sorted by timestamp (newest first)
  */
 export function generateStockData({
-  symbol,
-  interval,
+  interval = "1m",
   basePrice = 100,
   volatility = 0.02,
-  points = 5,
+  points = 100,
 }: GenerateStockDataOptions): StockData[] {
   const data: StockData[] = [];
   const minutesPerInterval = INTERVAL_TO_MINUTES[interval];
@@ -58,14 +57,13 @@ export function generateStockData({
     const volume = Math.floor(baseVolume * volumeSpike);
 
     data.push({
-      symbol,
-      date: timestamp,
+      date: timestamp.toISOString(),
       open,
       high,
       low,
       close,
       volume,
-    });
+    } as StockData);
   }
 
   return data;

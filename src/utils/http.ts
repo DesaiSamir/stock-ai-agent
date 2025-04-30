@@ -4,6 +4,7 @@ import { useSessionStore } from '@/store/session';
 import type { BarData, BarchartRequest, TimeUnit, QuoteData } from '@/types/tradestation';
 import axios from 'axios';
 import type { StreamData } from '@/app/api/services/tradestation/tradingService';
+import { cookieUtils } from '@/utils/cookies';
 
 export interface StreamPayload {
   symbol: string;
@@ -20,6 +21,9 @@ export interface FormattedBarData {
   close: number;
   volume: number;
 }
+
+const API_CALL_TIMEOUT = 10000;
+const API_CALL_TIMEOUT_OFF_HOURS = 30000;
 
 export const http = {
   // Add flags to track if fetches are in progress
@@ -45,7 +49,7 @@ export const http = {
   },
 
   getRefreshInterval() {
-    return this.isRegularSessionTime() ? 1000 : 10000;
+    return this.isRegularSessionTime() ? API_CALL_TIMEOUT : API_CALL_TIMEOUT_OFF_HOURS;
   },
 
   isRegularSessionTime() {
@@ -108,7 +112,7 @@ export const http = {
       // Setup polling every second
       this.quoteTimer = setInterval(async () => {
         await this.getQuoteData(symbol, callback);
-      }, 1000);
+      }, API_CALL_TIMEOUT);
 
       // Return a resolved promise to indicate initial data is loaded
       return Promise.resolve();
@@ -177,7 +181,7 @@ export const http = {
       }
 
       // Setup polling every second
-      this.barChartTimer = setInterval(fetchData, 1000);
+      this.barChartTimer = setInterval(fetchData, API_CALL_TIMEOUT);
 
       // Return a resolved promise to indicate initial data is loaded
       return Promise.resolve();
@@ -229,50 +233,67 @@ export const http = {
   },
 
   async validateTokens() {
+    // Read directly from cookies instead of store
+    const cookies = cookieUtils.getAuthCookies();
     const store = useSessionStore.getState();
-    if (!store.isConnected || !store.accessToken || !store.refreshToken) {
+    
+    if (!cookies.refreshToken) {
       return false;
     }
 
     try {
       // Check if token will expire in the next minute
       const bufferTime = 60 * 1000; // 1 minute in milliseconds
-      const isExpiringSoon = store.tokenExpiration && 
-                            (store.tokenExpiration - Date.now() < bufferTime);
+      const isExpiringSoon = !cookies.tokenExpiration || 
+                            (cookies.tokenExpiration - Date.now() < bufferTime);
 
       if (isExpiringSoon) {
-        // Use the existing API route that uses authService
-        const headers = new Headers({
-          'Authorization': `Bearer ${store.accessToken}`,
-          'Refresh-Token': store.refreshToken,
-          'Token-Expiration': store.tokenExpiration?.toString() || ''
-        });
-
         const response = await fetch('/api/tradestation/token/refresh', {
           method: 'POST',
-          headers
+          headers: {
+            'Refresh-Token': cookies.refreshToken
+          }
         });
 
         if (!response.ok) {
-          throw new Error('AUTH_REFRESH_FAILED');
+          const errorData = await response.json();
+          console.error('Token refresh failed:', errorData);
+          throw new Error(errorData.error || 'AUTH_REFRESH_FAILED');
         }
 
         const data = await response.json();
-        const tokenExpiration = Date.now() + data.expires_in;
-        if (data.access_token) {
-          store.setAccessToken(
-            data.access_token,
-            data.expires_in
-          );
-          store.setTokenExpiration(tokenExpiration);
-          return true;
+        if (!data.access_token || !data.expires_in) {
+          console.error('Invalid token refresh response:', data);
+          throw new Error('AUTH_INVALID_RESPONSE');
         }
+
+        const tokenExpiration = Date.now() + (data.expires_in * 1000);
+        
+        // Update cookies
+        cookieUtils.setAuthCookies({
+          accessToken: data.access_token,
+          expiresIn: data.expires_in,
+          tokenExpiration: tokenExpiration
+        });
+
+        // Always update store with new token and set connected state
+        store.setAccessToken(data.access_token, data.expires_in);
+        store.setTokenExpiration(tokenExpiration);
+        store.setConnected(true);
+
+        return true;
       }
 
       return !isExpiringSoon;
     } catch (error) {
-      console.error('Failed to validate/refresh token:', error);
-      store.disconnect();
+      console.error('Token validation/refresh failed:', error);
+      // Only disconnect if it's an auth error
+      if (error instanceof Error && 
+          ['AUTH_NO_TOKEN', 'AUTH_NO_REFRESH_TOKEN', 'AUTH_REFRESH_FAILED', 'AUTH_INVALID', 'AUTH_INVALID_RESPONSE']
+          .includes(error.message)) {
+        store.disconnect();
+        cookieUtils.clearAuthCookies(); // Also clear cookies on auth error
+      }
       return false;
     }
   },
