@@ -56,7 +56,8 @@ export function useStockData({
         return {
           ...bar,
           symbol,
-          date: new Date(timestamp)
+          date: new Date(timestamp).toISOString(),
+          price: bar.close
         };
       });
       updateBarData(symbol, formattedData);

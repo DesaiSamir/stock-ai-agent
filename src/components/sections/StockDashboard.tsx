@@ -1,73 +1,85 @@
 "use client";
 
-import React, { useState, useCallback } from "react";
-import type { TradingSignal, NewsItem, AgentStatus } from "../../types/stock";
+import React, { useState, useCallback, useEffect } from "react";
+// import type { TradingSignal, NewsItem, AgentStatus } from "../../types/stock";
 import { AgentToolbar } from "../blocks/AgentToolbar";
-import { StockChart } from "../blocks/StockChart";
+// import { StockChart } from "../blocks/StockChart";
+import { DynamicStockChart } from "../blocks/DynamicStockChart";
 import { AgentTabs } from "../blocks/AgentTabs";
 import { Box, Divider } from "@mui/material";
+import { useMarketDataStore } from "@/store/market-data";
 
 interface StockDashboardProps {
-  tradingSignals: TradingSignal[];
-  newsItems: NewsItem[];
-  agentStatus: AgentStatus[];
+  initialChartHeight?: number;
 }
 
 export const StockDashboard: React.FC<StockDashboardProps> = ({
-  tradingSignals,
-  newsItems,
-  agentStatus,
+  initialChartHeight = 60,
 }) => {
-  const [chartHeight, setChartHeight] = useState<number>(66.666);
-  const [isDragging, setIsDragging] = useState<boolean>(false);
+  const [chartHeight, setChartHeight] = useState(initialChartHeight);
+  const [isDragging, setIsDragging] = useState(false);
+  const [activeAgent, setActiveAgent] = useState<
+    "chart" | "dynamic-chart" | "news" | "trading" | "analysis"
+  >("dynamic-chart");
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  const { setCurrentSymbol, currentSymbol } = useMarketDataStore();
+
+  // Set initial symbol if none is selected
+  useEffect(() => {
+    if (!currentSymbol) {
+      setCurrentSymbol("AAPL");
+    }
+  }, [currentSymbol, setCurrentSymbol]);
+
+  const handleMouseDown = useCallback(() => {
     setIsDragging(true);
-    e.preventDefault();
   }, []);
-
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (!isDragging) return;
-
-      const container = (e.currentTarget as HTMLElement).parentElement;
-      if (!container) return;
-
-      const { top, height } = container.getBoundingClientRect();
-      const newChartHeight = ((e.clientY - top) / height) * 100;
-
-      // Limit the chart height between 20% and 80%
-      const limitedHeight = Math.min(Math.max(newChartHeight, 20), 80);
-      setChartHeight(limitedHeight);
-      e.preventDefault();
-    },
-    [isDragging]
-  );
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isDragging) {
-      document.addEventListener(
-        "mousemove",
-        handleMouseMove as unknown as (e: MouseEvent) => void
-      );
-      document.addEventListener("mouseup", handleMouseUp);
+      window.addEventListener("mouseup", handleMouseUp);
+      return () => {
+        window.removeEventListener("mouseup", handleMouseUp);
+      };
     }
-    return () => {
-      document.removeEventListener(
-        "mousemove",
-        handleMouseMove as unknown as (e: MouseEvent) => void
-      );
-      document.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+  }, [isDragging, handleMouseUp]);
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent) => {
+      if (isDragging) {
+        const containerHeight = window.innerHeight;
+        const newHeight = (e.clientY / containerHeight) * 100;
+        setChartHeight(Math.min(Math.max(newHeight, 20), 80));
+      }
+    },
+    [isDragging]
+  );
+
+  const renderChartComponent = () => {
+    if (!currentSymbol) return null;
+
+    switch (activeAgent) {
+      case "chart":
+      // return <StockChart symbol={currentSymbol} />;
+      case "dynamic-chart":
+        return <DynamicStockChart symbol={currentSymbol} />;
+      case "news":
+      case "trading":
+      case "analysis":
+        return null;
+      default:
+        // return <StockChart symbol={currentSymbol} />;
+        return null;
+    }
+  };
 
   return (
     <Box sx={{ display: "flex", height: "100vh", overflow: "hidden" }}>
-      <AgentToolbar />
+      <AgentToolbar onSelectAgent={setActiveAgent} activeAgent={activeAgent} />
 
       <Box
         sx={{
@@ -91,7 +103,7 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
             overflow: "hidden",
           }}
         >
-          <StockChart symbol="AAPL" />
+          {renderChartComponent()}
         </Box>
 
         {/* Draggable Divider */}
@@ -115,19 +127,11 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
         {/* Agent Tabs - Remaining height */}
         <Box
           sx={{
-            height: `${100 - chartHeight}%`,
-            minHeight: "20%",
-            maxHeight: "80%",
-            width: "100%",
-            position: "relative",
-            overflow: "hidden",
+            flexGrow: 1,
+            overflow: "auto",
           }}
         >
-          <AgentTabs
-            tradingSignals={tradingSignals}
-            newsItems={newsItems}
-            agentStatus={agentStatus}
-          />
+          <AgentTabs tradingSignals={[]} newsItems={[]} agentStatus={[]} />
         </Box>
       </Box>
     </Box>

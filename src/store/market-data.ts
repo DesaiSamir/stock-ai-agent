@@ -11,8 +11,8 @@ interface StoredMarketData {
   currentSymbol: string | null;
 }
 
-const STORAGE_KEY = 'market_data';
-const DATA_EXPIRY_TIME = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+const STORAGE_KEY = 'market-data';
+const DATA_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes
 
 const defaultState: StoredMarketData = {
   barData: {},
@@ -21,44 +21,58 @@ const defaultState: StoredMarketData = {
   currentSymbol: null
 };
 
-// Helper functions for localStorage
-const loadFromStorage = (): StoredMarketData => {
-  if (typeof window === 'undefined') {
-    return defaultState;
+// Helper function to save state to localStorage
+const saveToStorage = (state: Partial<StoredMarketData>) => {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const currentData = loadFromStorage();
+    const dataToSave = {
+      ...currentData,
+      ...state,
+      lastUpdated: {
+        ...currentData.lastUpdated,
+        ...(state.lastUpdated || {})
+      }
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+  } catch (error) {
+    console.error('Failed to save market data to storage:', error);
   }
+};
+
+// Helper function to load state from localStorage
+const loadFromStorage = (): StoredMarketData => {
+  if (typeof window === 'undefined') return defaultState;
 
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const data = JSON.parse(stored) as StoredMarketData;
-      
-      // Clean up expired data
-      const now = Date.now();
-      Object.keys(data.lastUpdated).forEach(symbol => {
-        if (now - data.lastUpdated[symbol] > DATA_EXPIRY_TIME) {
-          delete data.barData[symbol];
-          delete data.quotes[symbol];
-          delete data.lastUpdated[symbol];
-        }
-      });
-      
-      return data;
-    }
+    if (!stored) return defaultState;
+
+    const data = JSON.parse(stored) as StoredMarketData;
+    
+    // Clean up expired data
+    const now = Date.now();
+    const cleanedData = {
+      ...defaultState,
+      ...data,
+      barData: { ...data.barData },
+      quotes: { ...data.quotes },
+      lastUpdated: { ...data.lastUpdated }
+    };
+    
+    Object.keys(cleanedData.lastUpdated).forEach(symbol => {
+      if (now - cleanedData.lastUpdated[symbol] > DATA_EXPIRY_TIME) {
+        delete cleanedData.barData[symbol];
+        delete cleanedData.quotes[symbol];
+        delete cleanedData.lastUpdated[symbol];
+      }
+    });
+    
+    return cleanedData;
   } catch (error) {
     console.error('Failed to load market data from storage:', error);
-  }
-  return defaultState;
-};
-
-const saveToStorage = (state: StoredMarketData) => {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch (error) {
-    console.error('Failed to save market data to storage:', error);
+    return defaultState;
   }
 };
 
@@ -75,6 +89,9 @@ interface MarketDataState extends StoredMarketData {
   isDataFresh: (symbol: string) => boolean;
   setCurrentSymbol: (symbol: string | null) => void;
   getCurrentSymbol: () => string | null;
+  dataExpiryTime: number;
+  loadFromStorage: () => void;
+  saveToStorage: () => void;
 }
 
 export const useMarketDataStore = create<MarketDataState>((set, get) => ({
@@ -83,69 +100,98 @@ export const useMarketDataStore = create<MarketDataState>((set, get) => ({
   quotes: initialState.quotes,
   lastUpdated: initialState.lastUpdated,
   currentSymbol: initialState.currentSymbol,
+  dataExpiryTime: DATA_EXPIRY_TIME,
 
-  // Actions
-  updateBarData: (symbol, data) => {
-    const newState = {
-      ...get(),
-      barData: {
-        ...get().barData,
-        [symbol]: data
-      },
-      lastUpdated: {
-        ...get().lastUpdated,
-        [symbol]: Date.now()
-      }
-    };
-    set(newState);
-    saveToStorage(newState);
+  updateBarData: (symbol: string, data: StockData[]) => {
+    if (!symbol || !Array.isArray(data)) {
+      console.error('Invalid data provided to updateBarData:', { symbol, data });
+      return;
+    }
+
+    const formattedData = data
+      .filter(d => d && typeof d === 'object')
+      .map(d => ({
+        ...d,
+        date: new Date(d.date).toISOString(),
+        price: Number(d.close || 0),
+        open: Number(d.open || 0),
+        high: Number(d.high || 0),
+        low: Number(d.low || 0),
+        close: Number(d.close || 0),
+        volume: Number(d.volume || 0)
+      }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    if (formattedData.length === 0) {
+      console.warn('No valid data points after formatting');
+      return;
+    }
+
+    set(state => {
+      const newState = {
+        barData: {
+          ...state.barData,
+          [symbol]: formattedData
+        },
+        lastUpdated: {
+          ...state.lastUpdated,
+          [symbol]: Date.now()
+        }
+      };
+      
+      // Save to storage
+      saveToStorage(newState);
+      
+      return newState;
+    });
   },
 
-  updateQuote: (symbol, quote) => {
-    const newState = {
-      ...get(),
-      quotes: {
-        ...get().quotes,
-        [symbol]: quote
-      },
-      lastUpdated: {
-        ...get().lastUpdated,
-        [symbol]: Date.now()
-      }
-    };
-    set(newState);
-    saveToStorage(newState);
+  updateQuote: (symbol: string, quote: QuoteData) => {
+    set(state => {
+      const newState = {
+        quotes: {
+          ...state.quotes,
+          [symbol]: quote
+        },
+        lastUpdated: {
+          ...state.lastUpdated,
+          [symbol]: Date.now()
+        }
+      };
+      saveToStorage(newState);
+      return newState;
+    });
   },
 
-  clearSymbolData: (symbol) => {
-    const { barData, quotes, lastUpdated } = get();
-    const newBarData = { ...barData };
-    const newQuotes = { ...quotes };
-    const newLastUpdated = { ...lastUpdated };
+  clearSymbolData: (symbol: string) => {
+    set(state => {
+      const { barData, quotes, lastUpdated } = state;
+      const newBarData = { ...barData };
+      const newQuotes = { ...quotes };
+      const newLastUpdated = { ...lastUpdated };
 
-    delete newBarData[symbol];
-    delete newQuotes[symbol];
-    delete newLastUpdated[symbol];
+      delete newBarData[symbol];
+      delete newQuotes[symbol];
+      delete newLastUpdated[symbol];
 
-    const newState = {
-      ...get(),
-      barData: newBarData,
-      quotes: newQuotes,
-      lastUpdated: newLastUpdated,
-      currentSymbol: get().currentSymbol === symbol ? null : get().currentSymbol
-    };
+      const newState = {
+        barData: newBarData,
+        quotes: newQuotes,
+        lastUpdated: newLastUpdated,
+        currentSymbol: state.currentSymbol === symbol ? null : state.currentSymbol
+      };
 
-    set(newState);
-    saveToStorage(newState);
+      saveToStorage(newState);
+      return newState;
+    });
   },
 
   clearAllData: () => {
-    const newState = defaultState;
-    set(newState);
-    saveToStorage(newState);
+    localStorage.removeItem(STORAGE_KEY);
+    set(defaultState);
   },
 
-  getBarData: (symbol) => {
+  getBarData: (symbol: string) => {
     const { barData, lastUpdated } = get();
     if (!barData[symbol] || !isDataFresh(lastUpdated[symbol])) {
       return null;
@@ -153,7 +199,7 @@ export const useMarketDataStore = create<MarketDataState>((set, get) => ({
     return barData[symbol];
   },
 
-  getQuote: (symbol) => {
+  getQuote: (symbol: string) => {
     const { quotes, lastUpdated } = get();
     if (!quotes[symbol] || !isDataFresh(lastUpdated[symbol])) {
       return null;
@@ -161,23 +207,49 @@ export const useMarketDataStore = create<MarketDataState>((set, get) => ({
     return quotes[symbol];
   },
 
-  isDataFresh: (symbol) => {
-    const { lastUpdated } = get();
-    const lastUpdate = lastUpdated[symbol];
+  isDataFresh: (symbol: string) => {
+    const lastUpdate = get().lastUpdated[symbol];
     if (!lastUpdate) return false;
-    return Date.now() - lastUpdate <= DATA_EXPIRY_TIME;
+    
+    const now = Date.now();
+    const age = now - lastUpdate;
+    const maxAge = get().dataExpiryTime;
+    
+    const hasData = get().barData[symbol]?.length > 0;
+    
+    return hasData && age < maxAge;
   },
 
-  setCurrentSymbol: (symbol) => {
-    const newState = {
-      ...get(),
-      currentSymbol: symbol
-    };
-    set(newState);
-    saveToStorage(newState);
+  setCurrentSymbol: (symbol: string | null) => {
+    set(() => {
+      const newState = { currentSymbol: symbol };
+      saveToStorage(newState);
+      return newState;
+    });
   },
 
-  getCurrentSymbol: () => get().currentSymbol
+  getCurrentSymbol: () => get().currentSymbol,
+
+  loadFromStorage: () => {
+    try {
+      const storedData = loadFromStorage();
+      set(storedData);
+    } catch (error) {
+      console.error('Error loading market data from storage:', error);
+      localStorage.removeItem(STORAGE_KEY);
+      set(defaultState);
+    }
+  },
+
+  saveToStorage: () => {
+    const state = get();
+    saveToStorage({
+      barData: state.barData,
+      quotes: state.quotes,
+      lastUpdated: state.lastUpdated,
+      currentSymbol: state.currentSymbol
+    });
+  }
 }));
 
 // Helper function to check if data is fresh

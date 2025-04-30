@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from 'zustand';
+import { cookieUtils } from '@/utils/cookies';
 
 export interface UserProfile {
   userid: string;
@@ -16,7 +17,7 @@ interface StoredSessionState {
   tokenExpiration: number | null; // timestamp when token expires
 }
 
-const STORAGE_KEY = 'tradestation_session';
+const STORAGE_KEY = "ts-session";
 
 const defaultState: StoredSessionState = {
   accessToken: null,
@@ -34,37 +35,60 @@ const loadFromStorage = (): StoredSessionState => {
   }
 
   try {
+    // First try to load from cookies
+    const cookieData = cookieUtils.getAuthCookies();
+    if (cookieData.accessToken && cookieData.refreshToken) {
+      return {
+        ...defaultState,
+        ...cookieData,
+        isConnected: true
+      };
+    }
+
+    // Fallback to localStorage
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      return JSON.parse(stored);
+      const data = JSON.parse(stored);
+      // Also set cookies if we found data in localStorage
+      cookieUtils.setAuthCookies({
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        expiresIn: data.expiresIn,
+        tokenExpiration: data.tokenExpiration
+      });
+      return data;
     }
   } catch (error) {
-    console.error('Failed to load session state from storage:', error);
+    console.error('Failed to load session state:', error);
   }
   return defaultState;
 };
 
 const saveToStorage = (state: StoredSessionState) => {
-  if (typeof window === 'undefined') {
-    return;
-  }
+  if (typeof window === 'undefined') return;
 
   try {
+    // Save to both localStorage and cookies
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    cookieUtils.setAuthCookies({
+      accessToken: state.accessToken,
+      refreshToken: state.refreshToken,
+      expiresIn: state.expiresIn,
+      tokenExpiration: state.tokenExpiration
+    });
   } catch (error) {
-    console.error('Failed to save session state to storage:', error);
+    console.error('Failed to save session state:', error);
   }
 };
 
 const clearStorage = () => {
-  if (typeof window === 'undefined') {
-    return;
-  }
+  if (typeof window === 'undefined') return;
 
   try {
     localStorage.removeItem(STORAGE_KEY);
+    cookieUtils.clearAuthCookies();
   } catch (error) {
-    console.error('Failed to clear session state from storage:', error);
+    console.error('Failed to clear session state:', error);
   }
 };
 
@@ -111,11 +135,14 @@ export const useSessionStore = create<SessionState>((set, get) => ({
         throw new Error('Popup blocked. Please enable popups for this site.');
       }
 
+      let isHandlingAuth = false; // Flag to prevent multiple handlers
+
       // Listen for messages from popup
       const handleMessage = async (event: MessageEvent) => {
         if (event.origin !== window.location.origin) return;
         
-        if (event.data?.type === 'TRADESTATION_AUTH_SUCCESS') {
+        if (event.data?.type === 'TRADESTATION_AUTH_SUCCESS' && !isHandlingAuth) {
+          isHandlingAuth = true; // Set flag to prevent multiple handling
           window.removeEventListener('message', handleMessage);
           
           const newState = {
@@ -131,9 +158,14 @@ export const useSessionStore = create<SessionState>((set, get) => ({
           
           set(newState);
           saveToStorage(newState);
+          
+          if (popup) {
+            popup.close(); // Close the popup after successful auth
+          }
         }
 
-        if (event.data?.type === 'TRADESTATION_AUTH_ERROR') {
+        if (event.data?.type === 'TRADESTATION_AUTH_ERROR' && !isHandlingAuth) {
+          isHandlingAuth = true; // Set flag to prevent multiple handling
           window.removeEventListener('message', handleMessage);
           
           const newState = {
@@ -149,6 +181,10 @@ export const useSessionStore = create<SessionState>((set, get) => ({
           
           set(newState);
           clearStorage();
+          
+          if (popup) {
+            popup.close(); // Close the popup after error
+          }
         }
       };
 

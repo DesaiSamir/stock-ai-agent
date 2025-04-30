@@ -23,22 +23,6 @@ import { StockData } from "@/types/stock";
 import "chartjs-adapter-date-fns";
 import { enUS } from "date-fns/locale";
 
-// Register Chart.js components only on client side
-if (typeof window !== "undefined") {
-  ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    PointElement,
-    LineElement,
-    Title,
-    Tooltip,
-    Legend,
-    TimeScale,
-    CandlestickController,
-    CandlestickElement
-  );
-}
-
 interface DynamicChartProps {
   data: StockData[];
   width?: number;
@@ -62,8 +46,21 @@ const DynamicChart: React.FC<DynamicChartProps> = ({
   const chartRef = useRef<ChartJS | null>(null);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !canvasRef.current || !data.length)
-      return;
+    // Register Chart.js components on client side only
+    ChartJS.register(
+      CategoryScale,
+      LinearScale,
+      PointElement,
+      LineElement,
+      Title,
+      Tooltip,
+      Legend,
+      TimeScale,
+      CandlestickController,
+      CandlestickElement
+    );
+
+    if (!canvasRef.current || !data.length) return;
 
     if (chartRef.current) {
       chartRef.current.destroy();
@@ -84,17 +81,13 @@ const DynamicChart: React.FC<DynamicChartProps> = ({
       )
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    // Process data to ensure continuous time series
-    const candleData = sortedData.map((item) => {
-      const timestamp = new Date(item.date).getTime();
-      return {
-        x: timestamp,
-        o: item.open,
-        h: item.high,
-        l: item.low,
-        c: item.close,
-      };
-    });
+    const candleData = sortedData.map((item) => ({
+      x: new Date(item.date).getTime(),
+      o: item.open,
+      h: item.high,
+      l: item.low,
+      c: item.close,
+    }));
 
     const config = {
       type: "candlestick" as const,
@@ -103,65 +96,48 @@ const DynamicChart: React.FC<DynamicChartProps> = ({
           {
             label: "OHLC",
             data: candleData,
-            borderColor: "#000000",
             backgroundColor: (ctx: ScriptableContext<"candlestick">) => {
               const candle = ctx.raw as CandleData;
               return candle.o <= candle.c
                 ? "rgba(75, 192, 192, 0.5)"
                 : "rgba(255, 99, 132, 0.5)";
             },
-            borderWidth: 1,
-            barPercentage: 1.0,
-            categoryPercentage: 1.0,
+            borderColor: (ctx: ScriptableContext<"candlestick">) => {
+              const candle = ctx.raw as CandleData;
+              return candle.o <= candle.c
+                ? "rgb(75, 192, 192)"
+                : "rgb(255, 99, 132)";
+            },
+            borderWidth: 2,
+            borderSkipped: false,
           },
         ],
       },
       options: {
         parsing: false,
-        normalized: true,
         animation: false,
         responsive: true,
         maintainAspectRatio: false,
         scales: {
           x: {
-            type: "time" as const,
-            offset: true,
-            grid: {
-              display: true,
-              drawBorder: true,
+            type: "time",
+            time: {
+              unit: "minute",
+            },
+            adapters: {
+              date: {
+                locale: enUS, // Use consistent locale
+              },
             },
             ticks: {
               source: "data",
-              maxRotation: 0,
               autoSkip: true,
-              autoSkipPadding: 75,
-            },
-            time: {
-              unit: "minute",
-              stepSize: 1,
-              displayFormats: {
-                millisecond: "HH:mm:ss",
-                second: "HH:mm:ss",
-                minute: "HH:mm",
-                hour: "HH:mm",
-                day: "MMM d",
-                week: "MMM d",
-                month: "MMM yyyy",
-                quarter: "MMM yyyy",
-                year: "yyyy",
-              },
-            },
-            bounds: "data",
-            distribution: "linear",
-            adapters: {
-              date: {
-                locale: enUS,
-              },
+              maxRotation: 0,
             },
           },
           y: {
-            type: "linear" as const,
-            position: "right" as const,
+            type: "linear",
+            position: "right",
             grid: {
               color: "rgba(0, 0, 0, 0.1)",
             },
@@ -173,7 +149,7 @@ const DynamicChart: React.FC<DynamicChartProps> = ({
           },
           tooltip: {
             intersect: false,
-            mode: "index" as const,
+            mode: "index",
             callbacks: {
               label(tooltipItem: TooltipItem<"candlestick">) {
                 const point = tooltipItem.parsed as unknown as CandleData;

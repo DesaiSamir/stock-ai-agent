@@ -1,13 +1,13 @@
 export type TimeInterval = '1m' | '5m' | '15m' | '30m' | '1h' | '1d' | '1w' | '1M';
 
 export interface StockData {
-  symbol: string;
-  date: Date;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
+  date: string;
+  price: number;
+  volume?: number;
+  open?: number;
+  high?: number;
+  low?: number;
+  close?: number;
 }
 
 export interface TradingSignal {
