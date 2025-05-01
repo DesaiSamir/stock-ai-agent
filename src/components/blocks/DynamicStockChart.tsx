@@ -63,6 +63,7 @@ export const DynamicStockChart: React.FC<DynamicStockChartProps> = ({
   const { isLoading, error } = useStockData({
     symbol,
     interval,
+    useSampleData: true,
   });
 
   const updateDimensions = useCallback(() => {

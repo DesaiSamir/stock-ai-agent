@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Next.js: Node",
+      "name": "Next.js: Server",
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/node_modules/next/dist/bin/next",
@@ -11,13 +11,16 @@
       "protocol": "inspector",
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
-      "env": {
-        "NODE_OPTIONS": "--inspect"
-      },
       "skipFiles": [
         "<node_internals>/**",
         "${workspaceFolder}/node_modules/**"
-      ]
+      ],
+      "env": {
+        "NODE_OPTIONS": "--inspect"
+      },
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--inspect"],
+      "autoAttachChildProcesses": false
     }
   ]
 } 

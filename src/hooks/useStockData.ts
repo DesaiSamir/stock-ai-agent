@@ -1,35 +1,41 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import type { TimeInterval } from '../types/stock';
-import { http, type FormattedBarData } from '@/utils/http';
-import type { StreamPayload } from '@/utils/http';
-import type { QuoteData } from '@/types/tradestation';
-import { useMarketDataStore } from '@/store/market-data';
-import { useSessionStore } from '@/store/session';
+import { useState, useEffect } from "react";
+import type { TimeInterval } from "../types/stock";
+import { http, type FormattedBarData } from "@/utils/http";
+import type { StreamPayload } from "@/utils/http";
+import type { QuoteData } from "@/types/tradestation";
+import { useMarketDataStore } from "@/store/market-data";
+import { useSessionStore } from "@/store/session";
+import {
+  generateSampleBarData,
+  generateSampleQuote,
+} from "@/data/utils/sampleDataUtils";
 
 interface UseStockDataOptions {
   symbol: string;
   interval: TimeInterval;
   isPreMarket?: boolean;
+  useSampleData?: boolean;
 }
 
-export function useStockData({ 
-  symbol, 
-  interval = '1m',
-  isPreMarket = false
+export function useStockData({
+  symbol,
+  interval = "1m",
+  isPreMarket = false,
+  useSampleData = false,
 }: UseStockDataOptions) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { 
-    updateBarData,
-    updateQuote
-  } = useMarketDataStore();
+  const { updateBarData, updateQuote } = useMarketDataStore();
   const { isConnected } = useSessionStore();
+
   // Barchart data effect
   useEffect(() => {
-    if (!isConnected) {
-      setError('Not connected to TradeStation');
+    if (!isConnected || useSampleData) {
+      // Generate sample data when not connected or when useSampleData is true
+      const formattedData = generateSampleBarData(symbol, interval);
+      updateBarData(symbol, formattedData);
       setIsLoading(false);
       return;
     }
@@ -38,26 +44,26 @@ export function useStockData({
     setError(null);
 
     // Convert interval to TradeStation format
-    const unit = interval.endsWith('m') ? 'Minute' : 'Daily';
+    const unit = interval.endsWith("m") ? "Minute" : "Daily";
     const intervalValue = parseInt(interval);
-    
+
     const payload: StreamPayload = {
       symbol,
       interval: intervalValue,
       unit,
-      isPreMarket
+      isPreMarket,
     };
 
     // Handler for barchart data
     const handleBarData = (barData: FormattedBarData[]) => {
-      const formattedData = barData.map(bar => {
+      const formattedData = barData.map((bar) => {
         // Extract timestamp number from "/Date(1234567890000)/" format
-        const timestamp = parseInt(bar.timestamp.replace(/[^0-9]/g, ''));
+        const timestamp = parseInt(bar.timestamp.replace(/[^0-9]/g, ""));
         return {
           ...bar,
           symbol,
           date: new Date(timestamp).toISOString(),
-          price: bar.close
+          price: bar.close,
         };
       });
       updateBarData(symbol, formattedData);
@@ -67,16 +73,19 @@ export function useStockData({
     let mounted = true;
 
     // Start streaming data
-    http.getBarChartDataStream(payload, handleBarData)
+    http
+      .getBarChartDataStream(payload, handleBarData)
       .then(() => {
         if (mounted) {
           setIsLoading(false);
         }
       })
-      .catch(err => {
+      .catch((err) => {
         if (mounted) {
-          console.error('Failed to fetch bar data:', err);
-          setError(err instanceof Error ? err.message : 'Failed to fetch bar data');
+          console.error("Failed to fetch bar data:", err);
+          setError(
+            err instanceof Error ? err.message : "Failed to fetch bar data"
+          );
           setIsLoading(false);
         }
       });
@@ -86,12 +95,21 @@ export function useStockData({
       mounted = false;
       http.clearBarChartInterval();
     };
-  }, [symbol, interval, isPreMarket, isConnected, updateBarData]);
+  }, [
+    symbol,
+    interval,
+    isPreMarket,
+    isConnected,
+    updateBarData,
+    useSampleData,
+  ]);
 
   // Quote data polling
   useEffect(() => {
-    if (!isConnected) {
-      setError('Not connected to TradeStation');
+    if (!isConnected || useSampleData) {
+      // Generate sample quote data
+      const sampleQuote = generateSampleQuote(symbol);
+      updateQuote(symbol, sampleQuote);
       return;
     }
 
@@ -104,8 +122,8 @@ export function useStockData({
       if (quoteData.TradeTime) {
         const quoteTime = new Date(quoteData.TradeTime).getTime();
         const now = Date.now();
-        const fiveMinutesAgo = now - (5 * 60 * 1000);
-        
+        const fiveMinutesAgo = now - 5 * 60 * 1000;
+
         // Skip if quote is older than 5 minutes
         if (quoteTime < fiveMinutesAgo) {
           return;
@@ -118,16 +136,19 @@ export function useStockData({
     let mounted = true;
 
     // Start quote polling
-    http.startQuotePolling(symbol, handleQuoteData)
+    http
+      .startQuotePolling(symbol, handleQuoteData)
       .then(() => {
         if (mounted) {
           setError(null);
         }
       })
-      .catch(err => {
+      .catch((err) => {
         if (mounted) {
-          console.error('Failed to start quote polling:', err);
-          setError(err instanceof Error ? err.message : 'Failed to start quote polling');
+          console.error("Failed to start quote polling:", err);
+          setError(
+            err instanceof Error ? err.message : "Failed to start quote polling"
+          );
         }
       });
 
@@ -136,10 +157,10 @@ export function useStockData({
       mounted = false;
       http.clearQuoteInterval();
     };
-  }, [symbol, isConnected, updateQuote]);
+  }, [symbol, isConnected, updateQuote, useSampleData]);
 
   return {
     isLoading,
-    error
+    error,
   };
-} 
+}
