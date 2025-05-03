@@ -1,16 +1,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { TimeInterval } from "../types/stock";
-import { http, type FormattedBarData } from "@/utils/http";
-import type { StreamPayload } from "@/utils/http";
-import type { QuoteData } from "@/types/tradestation";
 import { useMarketDataStore } from "@/store/market-data";
-import { useSessionStore } from "@/store/session";
+import { TimeInterval } from "@/types/stock";
 import {
   generateSampleBarData,
   generateSampleQuote,
+  updateSampleBarData,
 } from "@/data/utils/sampleDataUtils";
+import { http } from "@/utils/http";
+import type { FormattedBarData, StreamPayload } from "@/utils/http";
+import type { QuoteData } from "@/types/tradestation";
+import { useSessionStore } from "@/store/session";
 
 interface UseStockDataOptions {
   symbol: string;
@@ -37,7 +38,16 @@ export function useStockData({
       const formattedData = generateSampleBarData(symbol, interval);
       updateBarData(symbol, formattedData);
       setIsLoading(false);
-      return;
+
+      // Set up interval for updates
+      const updateInterval = setInterval(() => {
+        const store = useMarketDataStore.getState();
+        const currentData = store.getBarData(symbol) || [];
+        const updatedData = updateSampleBarData(currentData, symbol, interval);
+        updateBarData(symbol, updatedData);
+      }, 1000); // Update every second for smoother updates
+
+      return () => clearInterval(updateInterval);
     }
 
     setIsLoading(true);

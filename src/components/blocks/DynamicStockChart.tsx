@@ -1,19 +1,13 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import type { TimeInterval, StockData } from "../../types/stock";
+import type { TimeInterval } from "../../types/stock";
 import { TimeIntervalSelector } from "../core/TimeIntervalSelector";
-import { StockStats } from "../core/StockStats";
+import { StockStats } from "../charts/stock-stats";
 import { Box } from "@mui/material";
 import { useStockData } from "../../hooks/useStockData";
-import { useMarketDataStore } from "@/store/market-data";
-import type { QuoteData } from "@/types/tradestation";
-import { DynamicChart } from "@/components/core/DynamicChart.client";
+import { CandlestickChart } from "@/components/charts/candlestick/CandlestickChart.client";
 
-// Import chart component dynamically with no SSR
-// const DynamicChart = dynamic(() => import("../core/DynamicChart.client"), {
-//   ssr: false,
-// });
 
 interface DynamicStockChartProps {
   symbol: string;
@@ -27,37 +21,11 @@ export const DynamicStockChart: React.FC<DynamicStockChartProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
-  // Store data in local state with proper types
-  const [barData, setBarData] = useState<StockData[]>([]);
-  const [quote, setQuote] = useState<QuoteData | null>(null);
-
   // Handle initial mount
   useEffect(() => {
     setMounted(true);
     return () => setMounted(false);
   }, []);
-
-  // Access store in effect
-  useEffect(() => {
-    if (!mounted) return;
-
-    // Set initial values
-    const store = useMarketDataStore.getState();
-    const data = store.getBarData(symbol) || [];
-    setBarData(data);
-    setQuote(store.getQuote(symbol) || null);
-
-    // Subscribe to changes
-    const unsubscribe = useMarketDataStore.subscribe((state) => {
-      const newData = state.barData[symbol] || [];
-      if (newData.length > 0) {
-        setBarData(newData);
-      }
-      setQuote(state.quotes[symbol] || null);
-    });
-
-    return unsubscribe;
-  }, [symbol, mounted]);
 
   // Setup data fetching
   const { isLoading, error } = useStockData({
@@ -142,7 +110,7 @@ export const DynamicStockChart: React.FC<DynamicStockChartProps> = ({
         position: "relative",
       }}
     >
-      <StockStats quote={quote} symbol={symbol} />
+      <StockStats />
 
       <Box
         ref={containerRef}
@@ -158,16 +126,14 @@ export const DynamicStockChart: React.FC<DynamicStockChartProps> = ({
           },
         }}
       >
-        {mounted &&
-          barData.length > 0 &&
-          dimensions.width > 0 &&
-          dimensions.height > 0 && (
-            <DynamicChart
-              data={barData}
-              width={dimensions.width}
-              height={dimensions.height}
-            />
-          )}
+        {mounted && dimensions.width > 0 && dimensions.height > 0 && (
+          <CandlestickChart
+            symbol={symbol}
+            interval={interval}
+            width={dimensions.width}
+            height={dimensions.height}
+          />
+        )}
       </Box>
 
       <TimeIntervalSelector value={interval} onChange={handleIntervalChange} />

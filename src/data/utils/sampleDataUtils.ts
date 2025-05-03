@@ -1,6 +1,23 @@
 import { StockData, TimeInterval } from "../../types/stock";
 import { QuoteData } from "../../types/tradestation";
-import { generateStockData } from "./generateStockData";
+import {
+  generateStockData,
+  generateCandlestickData,
+  createCandlestickChartData,
+  CandlestickData,
+} from "./generateStockData";
+
+const INTERVAL_TO_MS: Record<TimeInterval, number> = {
+  "1m": 60000,
+  "5m": 300000,
+  "15m": 900000,
+  "30m": 1800000,
+  "1h": 3600000,
+  "4h": 14400000,
+  "1d": 86400000,
+  "1w": 604800000,
+  "1M": 2592000000,
+};
 
 /**
  * Generates sample quote data for a given symbol
@@ -98,3 +115,46 @@ export function generateSampleBarData(
     price: data.close ?? data.open ?? 0,
   }));
 }
+
+export function updateSampleBarData(
+  currentData: StockData[],
+  symbol: string,
+  interval: TimeInterval
+): StockData[] {
+  const lastBar = currentData[currentData.length - 1];
+  const now = new Date();
+  const volatility = 0.001; // Reduced volatility for smoother intra-candle updates
+
+  if (
+    !lastBar ||
+    new Date(lastBar.date).getTime() + INTERVAL_TO_MS[interval] <= now.getTime()
+  ) {
+    // Time for a new bar
+    const newBar = generateStockData({
+      symbol,
+      interval,
+      basePrice: lastBar?.close ?? 100,
+      volatility: 0.02, // Keep original volatility for new bars
+      points: 1,
+    })[0];
+    return [...currentData, newBar];
+  } else {
+    // Update current bar with smaller movements
+    const currentPrice = lastBar.close ?? 0;
+    // Smaller price changes for intra-candle updates
+    const priceChange = currentPrice * volatility * (Math.random() * 2 - 1);
+    const newClose = Math.round((currentPrice + priceChange) * 100) / 100;
+
+    const updatedBar = {
+      ...lastBar,
+      high: Math.max(lastBar.high ?? 0, newClose),
+      low: Math.min(lastBar.low ?? 0, newClose),
+      close: newClose,
+    };
+    return [...currentData.slice(0, -1), updatedBar];
+  }
+}
+
+// Re-export the candlestick data types and functions
+export type { CandlestickData };
+export { generateCandlestickData, createCandlestickChartData };

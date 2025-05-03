@@ -1,7 +1,7 @@
-import { DataGrid, DataGridProps, GridColDef, GridRowParams } from '@mui/x-data-grid';
+import { DataGrid, DataGridProps, GridColDef, GridRowParams, GridValidRowModel } from '@mui/x-data-grid';
 import { Box } from '@mui/material';
 
-export interface DataTableProps<T> extends Omit<DataGridProps, 'columns' | 'rows' | 'onRowClick'> {
+export interface DataTableProps<T extends GridValidRowModel> extends Omit<DataGridProps, 'columns' | 'rows' | 'onRowClick'> {
   columns: GridColDef[];
   data: T[];
   loading?: boolean;
@@ -10,7 +10,7 @@ export interface DataTableProps<T> extends Omit<DataGridProps, 'columns' | 'rows
   onRowClick?: (params: GridRowParams<T>) => void;
 }
 
-export const DataTable = <T extends { id: string | number }>({
+export const DataTable = <T extends GridValidRowModel>({
   columns,
   data,
   loading = false,

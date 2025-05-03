@@ -1,4 +1,13 @@
-export type TimeInterval = '1m' | '5m' | '15m' | '30m' | '1h' | '1d' | '1w' | '1M';
+export type TimeInterval =
+  | "1m"
+  | "5m"
+  | "15m"
+  | "30m"
+  | "1h"
+  | "4h"
+  | "1d"
+  | "1w"
+  | "1M";
 
 export interface StockData {
   date: string;
@@ -13,7 +22,7 @@ export interface StockData {
 export interface TradingSignal {
   id: string;
   symbol: string;
-  type: 'BUY' | 'SELL';
+  type: "BUY" | "SELL";
   price: number;
   confidence: number;
   reason: string;
@@ -26,7 +35,7 @@ export interface NewsItem {
   content: string;
   source: string;
   url: string;
-  sentiment: 'positive' | 'negative' | 'neutral';
+  sentiment: "positive" | "negative" | "neutral";
   publishedAt: Date;
   symbol: string;
 }
@@ -34,7 +43,7 @@ export interface NewsItem {
 export interface AgentStatus {
   id: string;
   name: string;
-  status: 'active' | 'inactive' | 'error';
+  status: "active" | "inactive" | "error";
   lastUpdate: Date;
   message?: string;
-} 
+}

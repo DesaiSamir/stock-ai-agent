@@ -1,4 +1,5 @@
 import { StockData, TimeInterval } from "../../types/stock";
+import { DateTime } from "luxon";
 
 interface GenerateStockDataOptions {
   symbol: string;
@@ -14,10 +15,19 @@ const INTERVAL_TO_MINUTES: Record<TimeInterval, number> = {
   "15m": 15,
   "30m": 30,
   "1h": 60,
+  "4h": 240,
   "1d": 1440,
   "1w": 10080,
   "1M": 43200,
 };
+
+export interface CandlestickData {
+  x: number;
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+}
 
 /**
  * Generates realistic sample stock data based on the given parameters
@@ -76,4 +86,65 @@ export function generateStockData({
   }
 
   return data;
+}
+
+/**
+ * Generates sample candlestick data for charting
+ * @param count Number of data points to generate
+ * @returns Array of CandlestickData sorted by timestamp (newest first)
+ */
+export function generateCandlestickData(
+  count: number = 200
+): CandlestickData[] {
+  const data: CandlestickData[] = [];
+  let currentPrice = 100;
+  const volatility = 0.02;
+  const now = DateTime.now().toMillis();
+
+  for (let i = 0; i < count; i++) {
+    const timestamp = now - (count - i) * 5000; // 5-second intervals
+    const priceChange =
+      Math.round(currentPrice * volatility * (Math.random() * 2 - 1) * 100) /
+      100;
+    const open = Math.round(currentPrice * 100) / 100;
+    const close = Math.round((currentPrice + priceChange) * 100) / 100;
+    const high =
+      Math.round(
+        (Math.max(open, close) + Math.abs(priceChange) * Math.random()) * 100
+      ) / 100;
+    const low =
+      Math.round(
+        (Math.min(open, close) - Math.abs(priceChange) * Math.random()) * 100
+      ) / 100;
+
+    data.push({
+      x: timestamp,
+      o: currentPrice,
+      h: high,
+      l: low,
+      c: close,
+    });
+
+    currentPrice = close;
+  }
+
+  return data;
+}
+
+/**
+ * Creates chart-ready candlestick data structure
+ * @param data Array of CandlestickData
+ * @returns Chart.js compatible data structure
+ */
+export function createCandlestickChartData(data: CandlestickData[]) {
+  return {
+    datasets: [
+      {
+        label: "Stock Price",
+        data: data,
+        borderColor: "rgb(75, 192, 192)",
+        backgroundColor: "rgba(75, 192, 192, 0.5)",
+      },
+    ],
+  };
 }
