@@ -68,7 +68,6 @@ export const http = {
     if (this.isQuoteFetching) return;
 
     try {
-      this.isQuoteFetching = true;
       const store = useSessionStore.getState();
       
       // Validate/refresh tokens before proceeding
@@ -78,6 +77,7 @@ export const http = {
       }
 
       if (this.isRegularSessionTime()) {
+        this.isQuoteFetching = true;
         const response = await axios.get(`/api/tradestation/quote`, {
           params: {
             symbols: symbol,
@@ -248,40 +248,66 @@ export const http = {
                             (cookies.tokenExpiration - Date.now() < bufferTime);
 
       if (isExpiringSoon) {
-        const response = await fetch('/api/tradestation/token/refresh', {
+        // If a refresh is already in progress, wait for the existing promise
+        if (store.isRefreshingToken && store.refreshPromise) {
+          console.log('Token refresh already in progress, waiting for completion');
+          try {
+            await store.refreshPromise;
+            // The store should already be updated by the original refresh call
+            return true;
+          } catch (error) {
+            console.error('Waiting for refresh token failed:', error);
+            return false;
+          }
+        }
+
+        // Create the refresh token promise
+        const refreshPromise = fetch('/api/tradestation/token/refresh', {
           method: 'POST',
           headers: {
             'Refresh-Token': cookies.refreshToken
           }
+        }).then(async (response) => {
+          if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Token refresh failed:', errorData);
+            throw new Error(errorData.error || 'AUTH_REFRESH_FAILED');
+          }
+          return response.json();
         });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          console.error('Token refresh failed:', errorData);
-          throw new Error(errorData.error || 'AUTH_REFRESH_FAILED');
+        // Set the refresh state and promise in the store
+        store.setRefreshingToken(true, refreshPromise);
+
+        try {
+          const data = await refreshPromise;
+          if (!data.access_token || !data.expires_in) {
+            console.error('Invalid token refresh response:', data);
+            throw new Error('AUTH_INVALID_RESPONSE');
+          }
+
+          const tokenExpiration = Date.now() + (data.expires_in * 1000);
+          
+          // Update cookies
+          cookieUtils.setAuthCookies({
+            accessToken: data.access_token,
+            expiresIn: data.expires_in,
+            tokenExpiration: tokenExpiration
+          });
+
+          // Always update store with new token and set connected state
+          store.setAccessToken(data.access_token, data.expires_in);
+          store.setTokenExpiration(tokenExpiration);
+          store.setConnected(true);
+
+          return true;
+        } catch (error) {
+          console.error('Token refresh failed:', error);
+          throw error;
+        } finally {
+          // Reset the refresh state
+          store.setRefreshingToken(false);
         }
-
-        const data = await response.json();
-        if (!data.access_token || !data.expires_in) {
-          console.error('Invalid token refresh response:', data);
-          throw new Error('AUTH_INVALID_RESPONSE');
-        }
-
-        const tokenExpiration = Date.now() + (data.expires_in * 1000);
-        
-        // Update cookies
-        cookieUtils.setAuthCookies({
-          accessToken: data.access_token,
-          expiresIn: data.expires_in,
-          tokenExpiration: tokenExpiration
-        });
-
-        // Always update store with new token and set connected state
-        store.setAccessToken(data.access_token, data.expires_in);
-        store.setTokenExpiration(tokenExpiration);
-        store.setConnected(true);
-
-        return true;
       }
 
       return !isExpiringSoon;

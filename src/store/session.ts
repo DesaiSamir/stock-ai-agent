@@ -8,6 +8,11 @@ export interface UserProfile {
   [key: string]: unknown;
 }
 
+interface TokenRefreshResponse {
+  access_token: string;
+  expires_in: number;
+}
+
 interface StoredSessionState {
   accessToken: string | null;
   refreshToken: string | null;
@@ -97,6 +102,8 @@ const initialState = loadFromStorage();
 
 interface SessionState extends StoredSessionState {
   isConnecting: boolean;
+  isRefreshingToken: boolean;
+  refreshPromise: Promise<TokenRefreshResponse> | null;
   error: string | null;
   connect: () => Promise<void>;
   disconnect: () => void;
@@ -106,12 +113,15 @@ interface SessionState extends StoredSessionState {
   setError: (error: string | null) => void;
   setConnected: (connected: boolean) => void;
   isTokenExpired: () => boolean;
+  setRefreshingToken: (isRefreshing: boolean, promise?: Promise<TokenRefreshResponse>) => void;
 }
 
 export const useSessionStore = create<SessionState>((set, get) => ({
   // Initial state
   isConnected: initialState?.isConnected ?? false,
   isConnecting: false,
+  isRefreshingToken: false,
+  refreshPromise: null,
   error: null,
   accessToken: initialState?.accessToken ?? null,
   refreshToken: initialState?.refreshToken ?? null,
@@ -265,6 +275,13 @@ export const useSessionStore = create<SessionState>((set, get) => ({
     // Add a 30-second buffer to ensure we refresh before actual expiration
     const bufferTime = 30 * 1000; // 30 seconds in milliseconds
     return Date.now() + bufferTime >= state.tokenExpiration;
+  },
+
+  setRefreshingToken: (isRefreshing: boolean, promise?: Promise<TokenRefreshResponse>) => {
+    set({ 
+      isRefreshingToken: isRefreshing,
+      refreshPromise: promise || null
+    });
   }
 }));
 

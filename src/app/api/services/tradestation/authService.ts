@@ -14,8 +14,6 @@ export interface AuthHeaders {
 
 class AuthService {
   private static instance: AuthService;
-  private tokenInfo: TokenInfo | null = null;
-  private expiresAt: Date | null = null;
 
   private constructor() {}
 
@@ -40,7 +38,7 @@ class AuthService {
       client_secret: tradestationConfig.clientSecret
     });
 
-    const response = await fetch(`${tradestationConfig.baseUrlSim}/v2/Security/Authorize`, {
+    const response = await fetch(`${tradestationConfig.baseUrlSim}/v2/security/authorize`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: payload.toString(),
@@ -52,7 +50,6 @@ class AuthService {
     }
 
     const tokenInfo: TokenInfo = await response.json();
-    this.updateTokenInfo(tokenInfo);
     return tokenInfo;
   }
 
@@ -61,12 +58,16 @@ class AuthService {
       grant_type: 'refresh_token',
       refresh_token: refreshToken,
       client_id: tradestationConfig.clientId,
-      client_secret: tradestationConfig.clientSecret
+      client_secret: tradestationConfig.clientSecret,
+      response_type: 'token'
     });
 
-    const response = await fetch(`${tradestationConfig.baseUrlSim}/v2/Security/Authorize`, {
+    const response = await fetch(`${tradestationConfig.baseUrlSim}/v2/security/authorize`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: { 
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Length': payload.toString().length.toString()
+      },
       body: payload.toString(),
     });
 
@@ -77,23 +78,7 @@ class AuthService {
     }
 
     const tokenInfo: TokenInfo = await response.json();
-    this.updateTokenInfo(tokenInfo);
     return tokenInfo;
-  }
-
-  private updateTokenInfo(tokenInfo: TokenInfo): void {
-    if (tokenInfo.access_token) {
-      this.tokenInfo = tokenInfo;
-      this.expiresAt = new Date(Date.now() + tokenInfo.expires_in * 1000);
-    }
-  }
-
-  getTokenInfo(): TokenInfo | null {
-    return this.tokenInfo;
-  }
-
-  isAuthenticated(): boolean {
-    return !!this.tokenInfo && !!this.expiresAt && this.expiresAt.getTime() > Date.now();
   }
 }
 

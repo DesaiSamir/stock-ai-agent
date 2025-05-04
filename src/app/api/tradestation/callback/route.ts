@@ -1,8 +1,10 @@
 import { authService } from '@/app/api/services/tradestation/authService';
+import { NextRequest } from 'next/server';
 
-export async function POST(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const { code } = await request.json();
+    const searchParams = request.nextUrl.searchParams;
+    const code = searchParams.get('code');
     const url = new URL(request.url);
     const host = url.host || 'localhost:3000';
     
@@ -32,7 +34,6 @@ export async function POST(request: Request) {
       expires_in: tokenInfo.expires_in,
       profile: {
         userid: tokenInfo.userid,
-        // Add any other profile info you need
       }
     });
 

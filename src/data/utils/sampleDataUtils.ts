@@ -2,8 +2,6 @@ import { StockData, TimeInterval } from "../../types/stock";
 import { QuoteData } from "../../types/tradestation";
 import {
   generateStockData,
-  generateCandlestickData,
-  createCandlestickChartData,
   CandlestickData,
 } from "./generateStockData";
 
@@ -157,4 +155,3 @@ export function updateSampleBarData(
 
 // Re-export the candlestick data types and functions
 export type { CandlestickData };
-export { generateCandlestickData, createCandlestickChartData };

@@ -9,6 +9,20 @@ export const StockStats: React.FC = () => {
   const [quote, setQuote] = useState<QuoteData | null>(null);
   const [symbol, setSymbol] = useState<string>("");
 
+  const formatNumber = (num?: number) => {
+    if (num === undefined) return "-";
+    return num.toFixed(2);
+  };
+
+  const formatVolume = (num?: number) => {
+    if (num === undefined) return "-";
+    // Format with commas but no decimal places
+    return new Intl.NumberFormat("en-US", {
+      maximumFractionDigits: 0,
+      useGrouping: true,
+    }).format(num);
+  };
+
   useEffect(() => {
     // Set initial values
     const store = useMarketDataStore.getState();
@@ -31,35 +45,50 @@ export const StockStats: React.FC = () => {
   }, []);
 
   if (!quote || !symbol) {
-    return null;
+    return (
+      <Box
+        sx={{ height: "40px", display: "flex", alignItems: "center", px: 2 }}
+      >
+        <Typography variant="h6">Loading...</Typography>
+      </Box>
+    );
   }
 
   return (
     <Box
       sx={{
+        height: "40px",
         display: "flex",
-        flexDirection: "column",
-        gap: 1,
-        p: 2,
-        backgroundColor: "background.paper",
-        borderRadius: 1,
+        alignItems: "center",
+        justifyContent: "space-between",
+        px: 2,
+        borderBottom: 1,
+        borderColor: "divider",
       }}
     >
-      <Typography variant="h6" component="div">
-        {symbol}
-      </Typography>
-      <Typography variant="body1" color="text.secondary">
-        Last Price: ${quote.Last?.toFixed(2)}
-      </Typography>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <Typography variant="h6" sx={{ mr: 2 }}>
+          {symbol}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          O {formatNumber(quote.Open)}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          H {formatNumber(quote.High)}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          L {formatNumber(quote.Low)}
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          V {formatVolume(quote.Volume)}
+        </Typography>
+      </Box>
       <Typography
-        variant="body1"
-        color={quote.NetChangePct >= 0 ? "success.main" : "error.main"}
+        variant="h6"
+        color={quote.Close >= quote.Open ? "success.main" : "error.main"}
       >
-        Change: {quote.NetChangePct?.toFixed(2)}%
-      </Typography>
-      <Typography variant="body2" color="text.secondary">
-        Volume: {quote.Volume?.toLocaleString()}
+        ${formatNumber(quote.Close)}
       </Typography>
     </Box>
   );
-}; 
+};

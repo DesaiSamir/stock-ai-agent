@@ -70,10 +70,14 @@ export function useStockData({
         // Extract timestamp number from "/Date(1234567890000)/" format
         const timestamp = parseInt(bar.timestamp.replace(/[^0-9]/g, ""));
         return {
-          ...bar,
           symbol,
           date: new Date(timestamp).toISOString(),
-          price: bar.close,
+          open: Number(bar.open),
+          high: Number(bar.high),
+          low: Number(bar.low),
+          close: Number(bar.close),
+          volume: Number(bar.volume),
+          price: Number(bar.close), // Use close price as the current price
         };
       });
       updateBarData(symbol, formattedData);

@@ -1,15 +1,38 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { CircularProgress, Box, Typography } from "@mui/material";
 
+const CALLBACK_HANDLED_KEY = 'ts_callback_handled';
+
 export default function CallbackPage() {
   const searchParams = useSearchParams();
+  const code = searchParams.get("code");
+  const [isHandlingCallback, setIsHandlingCallback] = useState(() => {
+    // Initialize from sessionStorage if available
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem(CALLBACK_HANDLED_KEY) === 'true';
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    console.log('Callback page mounted/reloaded', {
+      isHandlingCallback,
+      hasCode: !!code,
+      timestamp: new Date().toISOString()
+    });
+  }, []);
 
   useEffect(() => {
     async function handleCallback() {
-      const code = searchParams.get("code");
+      // Check sessionStorage first
+      if (typeof window !== 'undefined' && sessionStorage.getItem(CALLBACK_HANDLED_KEY) === 'true') {
+        console.log('Callback already handled according to sessionStorage, skipping...');
+        return;
+      }
+
       if (!code) {
         console.error("No authorization code received");
         if (window.opener) {
@@ -26,13 +49,20 @@ export default function CallbackPage() {
       }
 
       try {
-        // Exchange code for token using our API endpoint
-        const response = await fetch("/api/tradestation/callback", {
-          method: "POST",
+        // Set both state and sessionStorage
+        setIsHandlingCallback(true);
+        sessionStorage.setItem(CALLBACK_HANDLED_KEY, 'true');
+        console.log('Starting code exchange...', {
+          code: code.substring(0, 10) + '...',
+          timestamp: new Date().toISOString()
+        });
+        
+        // Exchange code for token using our API endpoint with GET request
+        const response = await fetch(`/api/tradestation/callback?code=${encodeURIComponent(code)}`, {
+          method: "GET",
           headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ code }),
+            "Accept": "application/json",
+          }
         });
 
         if (!response.ok) {
@@ -40,6 +70,8 @@ export default function CallbackPage() {
         }
 
         const data = await response.json();
+        console.log('Token exchange successful, sending to parent window');
+        
         // Send success message to parent window
         if (window.opener) {
           window.opener.postMessage(
@@ -77,7 +109,7 @@ export default function CallbackPage() {
 
     // Execute callback handling
     handleCallback();
-  }, [searchParams]);
+  }, [code]); // Only depend on code, not on isHandlingCallback
 
   return (
     <Box

@@ -8,7 +8,6 @@ import { Box } from "@mui/material";
 import { useStockData } from "../../hooks/useStockData";
 import { CandlestickChart } from "@/components/charts/candlestick/CandlestickChart.client";
 
-
 interface DynamicStockChartProps {
   symbol: string;
 }
@@ -31,7 +30,6 @@ export const DynamicStockChart: React.FC<DynamicStockChartProps> = ({
   const { isLoading, error } = useStockData({
     symbol,
     interval,
-    useSampleData: true,
   });
 
   const updateDimensions = useCallback(() => {

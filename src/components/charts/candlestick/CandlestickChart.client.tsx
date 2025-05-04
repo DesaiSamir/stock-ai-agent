@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useRef, memo } from 'react';
+import { useState, useEffect, useRef, memo } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,13 +12,23 @@ import {
   Legend,
   ChartOptions,
   TimeScale,
-} from 'chart.js';
-import { CandlestickController, CandlestickElement } from 'chartjs-chart-financial';
-import { Chart } from 'react-chartjs-2';
-import 'chartjs-adapter-date-fns';
-import { useStockData } from '@/hooks/useStockData';
-import { useMarketDataStore } from '@/store/market-data';
-import { CandlestickChartProps, CandlestickData, ChartComponentProps } from './types';
+  TimeScaleTimeOptions,
+} from "chart.js";
+import {
+  CandlestickController,
+  CandlestickElement,
+} from "chartjs-chart-financial";
+import { Chart } from "react-chartjs-2";
+import "chartjs-adapter-date-fns";
+import { useStockData } from "@/hooks/useStockData";
+import { useMarketDataStore } from "@/store/market-data";
+import {
+  CandlestickChartProps,
+  CandlestickData,
+  ChartComponentProps,
+} from "./types";
+import { TimeInterval } from "@/types/stock";
+import type { DeepPartial } from "ts-essentials";
 
 const ChartComponent = memo(({ chartRef, options }: ChartComponentProps) => {
   return (
@@ -26,17 +36,19 @@ const ChartComponent = memo(({ chartRef, options }: ChartComponentProps) => {
       ref={chartRef}
       type="candlestick"
       data={{
-        datasets: [{
-          label: 'OHLC',
-          data: []
-        }]
+        datasets: [
+          {
+            label: "OHLC",
+            data: [],
+          },
+        ],
       }}
       options={options}
     />
   );
 });
 
-ChartComponent.displayName = 'ChartComponent';
+ChartComponent.displayName = "ChartComponent";
 
 // Register Chart.js components
 ChartJS.register(
@@ -52,125 +64,170 @@ ChartJS.register(
   TimeScale
 );
 
-const defaultOptions: ChartOptions<'candlestick'> = {
+const getTimeConfig = (
+  interval: TimeInterval
+): DeepPartial<TimeScaleTimeOptions> => {
+  switch (interval) {
+    case "1m":
+    case "5m":
+    case "15m":
+    case "30m":
+      return {
+        unit: "minute" as const,
+        displayFormats: {
+          minute: "HH:mm",
+        },
+      };
+    case "1h":
+    case "4h":
+      return {
+        unit: "hour" as const,
+        displayFormats: {
+          hour: "HH:mm",
+        },
+      };
+    case "1d":
+      return {
+        unit: "day" as const,
+        displayFormats: {
+          day: "MMM d",
+        },
+      };
+    case "1w":
+      return {
+        unit: "week" as const,
+        displayFormats: {
+          week: "MMM d",
+        },
+      };
+    case "1M":
+      return {
+        unit: "month" as const,
+        displayFormats: {
+          month: "MMM yyyy",
+        },
+      };
+  }
+};
+
+const defaultOptions: ChartOptions<"candlestick"> = {
   responsive: true,
   maintainAspectRatio: false,
   scales: {
     x: {
-      type: 'time',
-      time: {
-        unit: 'minute',
-        displayFormats: {
-          minute: 'HH:mm'
-        }
-      },
+      type: "time",
+      time: getTimeConfig("1m"), // Default to 1m
       ticks: {
-        source: 'auto',
+        source: "auto",
         maxRotation: 0,
-        autoSkip: true
-      }
+        autoSkip: true,
+      },
     },
     y: {
-      type: 'linear',
-      position: 'right',
+      type: "linear",
+      position: "right",
       beginAtZero: false,
       ticks: {
-        callback: (value) => `$${value}`
-      }
-    }
+        callback: (value) => `$${value}`,
+      },
+    },
   },
   interaction: {
     intersect: false,
-    mode: 'index'
+    mode: "index",
   },
   animation: {
-    duration: 0
+    duration: 0,
   },
   plugins: {
     zoom: {
       pan: {
         enabled: true,
-        mode: 'x'
+        mode: "x",
       },
       zoom: {
         wheel: {
-          enabled: true
+          enabled: true,
         },
         pinch: {
-          enabled: true
+          enabled: true,
         },
-        mode: 'x'
+        mode: "x",
       },
       limits: {
         x: {
-          min: 'original',
-          max: 'original',
-          minRange: 1000 * 60 * 5 // 5 minutes minimum zoom
-        }
-      }
+          min: "original",
+          max: "original",
+          minRange: 1000 * 60 * 5, // 5 minutes minimum zoom
+        },
+      },
     },
     legend: {
-      display: false
+      display: false,
     },
     tooltip: {
       enabled: true,
-      mode: 'index',
+      mode: "index",
       intersect: false,
-      backgroundColor: 'rgba(0, 0, 0, 0.8)',
-      titleColor: 'white',
-      bodyColor: 'white',
-      borderColor: 'rgba(255, 255, 255, 0.2)',
+      backgroundColor: "rgba(0, 0, 0, 0.8)",
+      titleColor: "white",
+      bodyColor: "white",
+      borderColor: "rgba(255, 255, 255, 0.2)",
       borderWidth: 1,
       padding: 10,
       displayColors: false,
       boxWidth: 12,
       boxHeight: 12,
       callbacks: {
-        title: function(context) {
+        title: function (context) {
           const data = context[0].raw as CandlestickData;
           const chart = context[0].chart;
-          const time = data === chart.data.datasets[0].data[chart.data.datasets[0].data.length - 1] 
-            ? new Date() 
-            : new Date(data.x);
-          return time.toLocaleString('en-US', { 
-            month: 'long',
-            day: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true 
+          const time =
+            data ===
+            chart.data.datasets[0].data[chart.data.datasets[0].data.length - 1]
+              ? new Date()
+              : new Date(data.x);
+          return time.toLocaleString("en-US", {
+            month: "long",
+            day: "numeric",
+            year: "numeric",
+            hour: "numeric",
+            minute: "2-digit",
+            second: "2-digit",
+            hour12: true,
           });
         },
-        label: function(context) {
+        label: function (context) {
           const data = context.raw as CandlestickData;
-          const greenSquare = '🟩';
-          const redSquare = '🟥';
-          
+          const greenSquare = "🟩";
+          const redSquare = "🟥";
+
           return [
             `${data.c >= data.o ? greenSquare : redSquare} Open: $${data.o.toFixed(2)}`,
             `${greenSquare} High: $${data.h.toFixed(2)}`,
             `${redSquare} Low: $${data.l.toFixed(2)}`,
-            `${data.c >= data.o ? greenSquare : redSquare} Close: $${data.c.toFixed(2)}`
+            `${data.c >= data.o ? greenSquare : redSquare} Close: $${data.c.toFixed(2)}`,
           ];
-        }
-      }
-    }
-  }
+        },
+      },
+    },
+  },
 };
 
-export function CandlestickChart({ 
+export function CandlestickChart({
   symbol,
   interval = "1m",
-  height = 400, 
+  height = 400,
   width = 800,
-  useSampleData = true
 }: CandlestickChartProps) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const chartRef = useRef<any>(null);
   const [isClient, setIsClient] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const { isLoading, error } = useStockData({ symbol, interval, useSampleData });
+  const { isLoading, error } = useStockData({
+    symbol,
+    interval,
+  });
 
   // Initialize client-side state
   useEffect(() => {
@@ -182,7 +239,7 @@ export function CandlestickChart({
   // Initialize zoom plugin on client side
   useEffect(() => {
     if (isClient) {
-      import('chartjs-plugin-zoom').then((zoomPlugin) => {
+      import("chartjs-plugin-zoom").then((zoomPlugin) => {
         ChartJS.register(zoomPlugin.default);
       });
     }
@@ -197,14 +254,14 @@ export function CandlestickChart({
     const initialData = store.getBarData(symbol) || [];
     if (initialData.length > 0) {
       const chart = chartRef.current;
-      chart.data.datasets[0].data = initialData.map(bar => ({
+      chart.data.datasets[0].data = initialData.map((bar) => ({
         x: new Date(bar.date).getTime(),
         o: bar.open!,
         h: bar.high!,
         l: bar.low!,
-        c: bar.close!
+        c: bar.close!,
       }));
-      chart.update('none');
+      chart.update("none");
     }
 
     const unsubscribe = useMarketDataStore.subscribe((state) => {
@@ -212,7 +269,7 @@ export function CandlestickChart({
       if (newData.length > 0 && chartRef.current) {
         const chart = chartRef.current;
         const existingData = chart.data.datasets[0].data;
-        
+
         // Update data without recreating array
         newData.forEach((bar, i) => {
           const point = {
@@ -220,7 +277,7 @@ export function CandlestickChart({
             o: bar.open!,
             h: bar.high!,
             l: bar.low!,
-            c: bar.close!
+            c: bar.close!,
           };
           if (i < existingData.length) {
             Object.assign(existingData[i], point);
@@ -234,12 +291,25 @@ export function CandlestickChart({
           existingData.length = newData.length;
         }
 
-        chart.update('none');
+        chart.update("none");
       }
     });
 
     return unsubscribe;
   }, [symbol, mounted]);
+
+  // Update time configuration when interval changes
+  useEffect(() => {
+    if (!mounted || !chartRef.current) return;
+
+    const chart = chartRef.current;
+    const timeConfig = getTimeConfig(interval);
+
+    if (chart.options.scales?.x) {
+      Object.assign(chart.options.scales.x.time, timeConfig);
+      chart.update("none");
+    }
+  }, [interval, mounted]);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -252,16 +322,16 @@ export function CandlestickChart({
   return (
     <div style={{ height, width }}>
       {isClient && (
-        <div style={{ marginBottom: '10px' }}>
-          <button 
-            onClick={() => chartRef.current?.resetZoom()} 
-            style={{ 
-              padding: '8px 16px',
-              backgroundColor: '#4a5568',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer'
+        <div style={{ marginBottom: "10px" }}>
+          <button
+            onClick={() => chartRef.current?.resetZoom()}
+            style={{
+              padding: "8px 16px",
+              backgroundColor: "#4a5568",
+              color: "white",
+              border: "none",
+              borderRadius: "4px",
+              cursor: "pointer",
             }}
           >
             Reset Zoom
@@ -271,4 +341,4 @@ export function CandlestickChart({
       <ChartComponent chartRef={chartRef} options={defaultOptions} />
     </div>
   );
-} 
+}

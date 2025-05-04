@@ -3,11 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "debug": "next dev --inspect",
+    "client": "next dev",
+    "dev": "next dev --inspect",
     "build": "next build",
     "start": "next start",
     "test": "jest",
+    "i": "npm install --legacy-peer-deps",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\""
   },
@@ -59,6 +60,7 @@
     "postcss": "^8.5.3",
     "prettier": "^3.2.5",
     "tailwindcss": "^4.1.4",
+    "ts-essentials": "^10.0.4",
     "typescript": "^5"
   }
 }
