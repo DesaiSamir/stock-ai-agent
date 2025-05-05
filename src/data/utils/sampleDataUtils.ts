@@ -1,9 +1,7 @@
-import { StockData, TimeInterval } from "../../types/stock";
+import { Candlestick } from "@/types/candlestick";
+import { TimeInterval } from "../../types/stock";
 import { QuoteData } from "../../types/tradestation";
-import {
-  generateStockData,
-  CandlestickData,
-} from "./generateStockData";
+import { generateStockData, CandlestickData } from "./generateStockData";
 
 const INTERVAL_TO_MS: Record<TimeInterval, number> = {
   "1m": 60000,
@@ -97,8 +95,8 @@ export function generateSampleQuote(symbol: string): QuoteData {
  */
 export function generateSampleBarData(
   symbol: string,
-  interval: string
-): StockData[] {
+  interval: string,
+): Candlestick[] {
   const sampleData = generateStockData({
     symbol,
     interval: interval as TimeInterval,
@@ -115,10 +113,10 @@ export function generateSampleBarData(
 }
 
 export function updateSampleBarData(
-  currentData: StockData[],
+  currentData: Candlestick[],
   symbol: string,
-  interval: TimeInterval
-): StockData[] {
+  interval: TimeInterval,
+): Candlestick[] {
   const lastBar = currentData[currentData.length - 1];
   const now = new Date();
   const volatility = 0.001; // Reduced volatility for smoother intra-candle updates

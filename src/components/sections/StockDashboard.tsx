@@ -58,7 +58,7 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
         setChartHeight(Math.min(Math.max(newHeight, 20), 80));
       }
     },
-    [isDragging]
+    [isDragging],
   );
 
   const renderChartComponent = () => {

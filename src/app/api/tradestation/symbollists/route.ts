@@ -1,9 +1,9 @@
-import { tradestationService } from '@/app/api/services/tradestation/tradingService';
+import { tradestationService } from "@/app/api/services/tradestation/tradingService";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const symbolListId = searchParams.get('symbol_list_id');
-  const symbols = searchParams.get('symbols');
+  const symbolListId = searchParams.get("symbol_list_id");
+  const symbols = searchParams.get("symbols");
 
   if (symbolListId && symbols) {
     const url = `/v2/data/symbollists/${symbolListId}/symbols`;
@@ -19,4 +19,4 @@ export async function GET(request: Request) {
   const url = `/v2/data/symbollists`;
   const result = await tradestationService.get(url);
   return Response.json(result ?? []);
-} 
+}

@@ -1,10 +1,10 @@
-import { tradestationService } from '@/app/api/services/tradestation/tradingService';
+import { tradestationService } from "@/app/api/services/tradestation/tradingService";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const userid = searchParams.get('userid');
-  const balancesKey = searchParams.get('balances');
-  const positionsKey = searchParams.get('positions');
+  const userid = searchParams.get("userid");
+  const balancesKey = searchParams.get("balances");
+  const positionsKey = searchParams.get("positions");
 
   if (userid) {
     const url = `/v2/users/${userid}/accounts`;
@@ -21,5 +21,7 @@ export async function GET(request: Request) {
     const result = await tradestationService.get(url);
     return Response.json(result ?? []);
   }
-  return new Response(JSON.stringify({ error: 'Missing required parameter' }), { status: 400 });
-} 
+  return new Response(JSON.stringify({ error: "Missing required parameter" }), {
+    status: 400,
+  });
+}

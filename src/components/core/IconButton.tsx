@@ -1,5 +1,5 @@
-import React from 'react';
-import { IconButton as MuiIconButton } from '@mui/material';
+import React from "react";
+import { IconButton as MuiIconButton } from "@mui/material";
 
 interface IconButtonProps {
   icon: React.ReactNode;
@@ -20,13 +20,13 @@ export const IconButton: React.FC<IconButtonProps> = ({
       className={className}
       title={tooltip}
       sx={{
-        color: 'text.secondary',
-        '&:hover': {
-          color: 'text.primary',
+        color: "text.secondary",
+        "&:hover": {
+          color: "text.primary",
         },
       }}
     >
       {icon}
     </MuiIconButton>
   );
-}; 
+};

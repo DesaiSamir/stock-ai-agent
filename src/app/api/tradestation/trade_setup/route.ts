@@ -1,4 +1,4 @@
-import { tradestationService } from '@/app/api/services/tradestation/tradingService';
+import { tradestationService } from "@/app/api/services/tradestation/tradingService";
 
 export async function GET() {
   // Example: get trade setups (customize as needed)
@@ -12,5 +12,7 @@ export async function POST(request: Request) {
   // For now, just log the payload as in the original code
   console.log(payload);
   // You can implement actual POST logic here if needed
-  return new Response(JSON.stringify({ message: 'Received', payload }), { status: 200 });
-} 
+  return new Response(JSON.stringify({ message: "Received", payload }), {
+    status: 200,
+  });
+}

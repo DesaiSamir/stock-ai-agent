@@ -1,5 +1,5 @@
-import { TradeSignal } from '@/types/agent';
-import { HttpClient } from './http-client';
+import { TradeSignal } from "@/types/agent";
+import { HttpClient } from "./http-client";
 
 interface Position {
   symbol: string;
@@ -30,23 +30,23 @@ export class TradingService {
   }
 
   public async getTradeSignals(symbol?: string): Promise<TradeSignal[]> {
-    const url = symbol ? `/trading/signals/${symbol}` : '/trading/signals';
+    const url = symbol ? `/trading/signals/${symbol}` : "/trading/signals";
     return this.httpClient.get<TradeSignal[]>(url);
   }
 
   public async executeTrade(signal: TradeSignal): Promise<Position> {
-    return this.httpClient.post<Position>('/trading/execute', signal);
+    return this.httpClient.post<Position>("/trading/execute", signal);
   }
 
   public async getPositions(): Promise<Position[]> {
-    return this.httpClient.get<Position[]>('/trading/positions');
+    return this.httpClient.get<Position[]>("/trading/positions");
   }
 
   public async getPortfolioSummary(): Promise<PortfolioSummary> {
-    return this.httpClient.get<PortfolioSummary>('/trading/portfolio');
+    return this.httpClient.get<PortfolioSummary>("/trading/portfolio");
   }
 
   public async setCash(amount: number): Promise<void> {
-    await this.httpClient.post('/trading/cash', { amount });
+    await this.httpClient.post("/trading/cash", { amount });
   }
-} 
+}

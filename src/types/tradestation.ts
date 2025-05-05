@@ -36,7 +36,7 @@ export interface BarData {
   UpVolume: number;
 }
 
-export type TimeUnit = 'Minute' | 'Daily' | 'Weekly' | 'Monthly';
+export type TimeUnit = "Minute" | "Daily" | "Weekly" | "Monthly";
 
 export interface BarchartRequest {
   symbol: string;
@@ -44,14 +44,17 @@ export interface BarchartRequest {
   unit: TimeUnit;
   barsBack: number;
   lastDate: string;
-  sessionTemplate?: 'USEQPreAndPost';
+  sessionTemplate?: "USEQPreAndPost";
 }
 
 // Helper function to format barchart URL
 export function formatBarchartUrl(params: BarchartRequest): string {
-  const { symbol, interval, unit, barsBack, lastDate, sessionTemplate } = params;
+  const { symbol, interval, unit, barsBack, lastDate, sessionTemplate } =
+    params;
   const baseUrl = `/v2/stream/barchart/${symbol}/${interval}/${unit}/${barsBack}/${lastDate}`;
-  return sessionTemplate ? `${baseUrl}?SessionTemplate=${sessionTemplate}` : baseUrl;
+  return sessionTemplate
+    ? `${baseUrl}?SessionTemplate=${sessionTemplate}`
+    : baseUrl;
 }
 
 export interface QuoteData {
@@ -117,4 +120,4 @@ export interface QuoteData {
   Volume: number;
   VWAP: number;
   VWAPDisplay: string;
-} 
+}

@@ -1,12 +1,20 @@
-import { Select as MUISelect, SelectProps as MUISelectProps, MenuItem, FormControl, InputLabel, FormHelperText } from '@mui/material';
-import { ReactNode } from 'react';
+import {
+  Select as MUISelect,
+  SelectProps as MUISelectProps,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  FormHelperText,
+} from "@mui/material";
+import { ReactNode } from "react";
 
 export interface SelectOption {
   value: string | number;
   label: string;
 }
 
-export interface SelectProps extends Omit<MUISelectProps, 'onChange' | 'variant'> {
+export interface SelectProps
+  extends Omit<MUISelectProps, "onChange" | "variant"> {
   label?: string;
   options: SelectOption[];
   value: string | number;
@@ -45,4 +53,4 @@ export const Select = ({
       {helperText && <FormHelperText>{helperText}</FormHelperText>}
     </FormControl>
   );
-}; 
+};

@@ -1,7 +1,14 @@
-import { DataGrid, DataGridProps, GridColDef, GridRowParams, GridValidRowModel } from '@mui/x-data-grid';
-import { Box } from '@mui/material';
+import {
+  DataGrid,
+  DataGridProps,
+  GridColDef,
+  GridRowParams,
+  GridValidRowModel,
+} from "@mui/x-data-grid";
+import { Box } from "@mui/material";
 
-export interface DataTableProps<T extends GridValidRowModel> extends Omit<DataGridProps, 'columns' | 'rows' | 'onRowClick'> {
+export interface DataTableProps<T extends GridValidRowModel>
+  extends Omit<DataGridProps, "columns" | "rows" | "onRowClick"> {
   columns: GridColDef[];
   data: T[];
   loading?: boolean;
@@ -20,7 +27,7 @@ export const DataTable = <T extends GridValidRowModel>({
   ...props
 }: DataTableProps<T>) => {
   return (
-    <Box sx={{ height: 400, width: '100%' }}>
+    <Box sx={{ height: 400, width: "100%" }}>
       <DataGrid
         columns={columns}
         rows={data}
@@ -37,4 +44,4 @@ export const DataTable = <T extends GridValidRowModel>({
       />
     </Box>
   );
-}; 
+};

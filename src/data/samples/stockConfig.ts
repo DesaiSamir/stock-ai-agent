@@ -1,4 +1,4 @@
-import type { TimeInterval } from '../../types/stock';
+import type { TimeInterval } from "../../types/stock";
 
 export interface StockConfig {
   symbol: string;
@@ -8,8 +8,8 @@ export interface StockConfig {
 }
 
 export const defaultStockConfig: StockConfig = {
-  symbol: 'AAPL',
-  interval: '1m',
+  symbol: "AAPL",
+  interval: "1m",
   basePrice: 180,
   points: 100,
-}; 
+};

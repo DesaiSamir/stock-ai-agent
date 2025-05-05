@@ -1,11 +1,14 @@
-import { Button as MUIButton, ButtonProps as MUIButtonProps } from '@mui/material';
-import { ReactNode } from 'react';
+import {
+  Button as MUIButton,
+  ButtonProps as MUIButtonProps,
+} from "@mui/material";
+import { ReactNode } from "react";
 
-export interface ButtonProps extends Omit<MUIButtonProps, 'color'> {
+export interface ButtonProps extends Omit<MUIButtonProps, "color"> {
   children: ReactNode;
-  variant?: 'contained' | 'outlined' | 'text';
-  color?: 'primary' | 'secondary' | 'error' | 'success' | 'warning';
-  size?: 'small' | 'medium' | 'large';
+  variant?: "contained" | "outlined" | "text";
+  color?: "primary" | "secondary" | "error" | "success" | "warning";
+  size?: "small" | "medium" | "large";
   isLoading?: boolean;
   startIcon?: ReactNode;
   endIcon?: ReactNode;
@@ -13,9 +16,9 @@ export interface ButtonProps extends Omit<MUIButtonProps, 'color'> {
 
 export const Button = ({
   children,
-  variant = 'contained',
-  color = 'primary',
-  size = 'medium',
+  variant = "contained",
+  color = "primary",
+  size = "medium",
   isLoading = false,
   startIcon,
   endIcon,
@@ -32,7 +35,7 @@ export const Button = ({
       endIcon={isLoading ? undefined : endIcon}
       {...props}
     >
-      {isLoading ? 'Loading...' : children}
+      {isLoading ? "Loading..." : children}
     </MUIButton>
   );
-}; 
+};

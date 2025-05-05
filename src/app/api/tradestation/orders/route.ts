@@ -1,4 +1,4 @@
-import { tradestationService } from '@/app/api/services/tradestation/tradingService';
+import { tradestationService } from "@/app/api/services/tradestation/tradingService";
 
 export async function GET() {
   // Example: get all orders (customize as needed)
@@ -9,7 +9,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const payload = await request.json();
-  const url = '/v2/orders';
+  const url = "/v2/orders";
   const result = await tradestationService.post(url, payload);
   return Response.json(result ?? []);
 }
@@ -27,4 +27,4 @@ export async function DELETE(request: Request) {
   // You may want to implement a .delete method in tradestationService
   const result = await tradestationService.get(url); // Placeholder
   return Response.json(result ?? []);
-} 
+}

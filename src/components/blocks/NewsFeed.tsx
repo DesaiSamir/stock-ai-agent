@@ -1,7 +1,7 @@
-import React from 'react';
-import { NewsItem } from '../../types/stock';
-import { Card } from '../core/Card';
-import { Alert } from '../core/Alert';
+import React from "react";
+import { NewsItem } from "../../types/stock";
+import { Card } from "../core/Card";
+import { Alert } from "../core/Alert";
 
 interface NewsFeedProps {
   items: NewsItem[];
@@ -9,9 +9,9 @@ interface NewsFeedProps {
 
 export const NewsFeed: React.FC<NewsFeedProps> = ({ items }) => {
   const getSentimentSeverity = (sentiment: number) => {
-    if (sentiment > 0.5) return 'success';
-    if (sentiment < -0.5) return 'error';
-    return 'info';
+    if (sentiment > 0.5) return "success";
+    if (sentiment < -0.5) return "error";
+    return "info";
   };
 
   return (
@@ -34,4 +34,4 @@ export const NewsFeed: React.FC<NewsFeedProps> = ({ items }) => {
       </div>
     </Card>
   );
-}; 
+};

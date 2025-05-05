@@ -1,7 +1,7 @@
 export interface AgentConfig {
   name: string;
-  type: 'NEWS' | 'TICKER' | 'ANALYSIS' | 'TRADING';
-  status: 'ACTIVE' | 'INACTIVE' | 'ERROR';
+  type: "NEWS" | "TICKER" | "ANALYSIS" | "TRADING";
+  status: "ACTIVE" | "INACTIVE" | "ERROR";
   lastUpdated: Date;
   config: Record<string, unknown>;
 }
@@ -24,9 +24,9 @@ export interface NewsItem {
 
 export interface TradeSignal {
   symbol: string;
-  action: 'BUY' | 'SELL' | 'HOLD';
+  action: "BUY" | "SELL" | "HOLD";
   price: number;
   confidence: number;
   timestamp: string;
   reason?: string;
-} 
+}

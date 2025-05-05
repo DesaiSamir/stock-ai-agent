@@ -1,6 +1,14 @@
 import React from "react";
 
-export function ClientOnlyDate({ date, formatOptions = {}, prefix = "" }: { date: string | Date, formatOptions?: Intl.DateTimeFormatOptions, prefix?: string }) {
+export function ClientOnlyDate({
+  date,
+  formatOptions = {},
+  prefix = "",
+}: {
+  date: string | Date;
+  formatOptions?: Intl.DateTimeFormatOptions;
+  prefix?: string;
+}) {
   const [formatted, setFormatted] = React.useState<string>("");
 
   React.useEffect(() => {
@@ -8,5 +16,10 @@ export function ClientOnlyDate({ date, formatOptions = {}, prefix = "" }: { date
     setFormatted(new Intl.DateTimeFormat("en-US", formatOptions).format(d));
   }, [date, formatOptions]);
 
-  return <span>{prefix}{formatted}</span>;
-} 
+  return (
+    <span>
+      {prefix}
+      {formatted}
+    </span>
+  );
+}

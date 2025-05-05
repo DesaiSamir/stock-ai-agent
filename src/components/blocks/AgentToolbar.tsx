@@ -14,7 +14,7 @@ import {
 
 interface AgentToolbarProps {
   onSelectAgent?: (
-    agent: "chart" | "dynamic-chart" | "news" | "trading" | "analysis"
+    agent: "chart" | "dynamic-chart" | "news" | "trading" | "analysis",
   ) => void;
   activeAgent?: "chart" | "dynamic-chart" | "news" | "trading" | "analysis";
 }

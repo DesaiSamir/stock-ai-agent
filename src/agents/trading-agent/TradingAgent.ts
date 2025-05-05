@@ -1,7 +1,7 @@
-import type { TradeSignal, StockData, AgentConfig } from '../../types/agent';
-import { EventEmitter } from 'events';
+import type { TradeSignal, StockData, AgentConfig } from "../../types/agent";
+import { EventEmitter } from "events";
 
-interface TradingAgentConfig extends Omit<AgentConfig, 'config'> {
+interface TradingAgentConfig extends Omit<AgentConfig, "config"> {
   config: {
     symbols: string[];
     minConfidence: number;
@@ -29,13 +29,13 @@ export class TradingAgent extends EventEmitter {
   }
 
   async start(): Promise<void> {
-    console.log('Starting Trading Agent...');
-    this.config.status = 'ACTIVE';
+    console.log("Starting Trading Agent...");
+    this.config.status = "ACTIVE";
     this.config.lastUpdated = new Date();
   }
 
   async stop(): Promise<void> {
-    this.config.status = 'INACTIVE';
+    this.config.status = "INACTIVE";
   }
 
   async handleTradeSignal(signal: TradeSignal): Promise<void> {
@@ -46,48 +46,53 @@ export class TradingAgent extends EventEmitter {
       }
 
       const position = this.positions.get(signal.symbol);
-      
+
       switch (signal.action) {
-        case 'BUY':
+        case "BUY":
           await this.executeBuy(signal, position);
           break;
-        case 'SELL':
+        case "SELL":
           await this.executeSell(signal, position);
           break;
-        case 'HOLD':
+        case "HOLD":
           console.log(`Holding position for ${signal.symbol}`);
           break;
       }
 
       this.config.lastUpdated = new Date();
-      this.emit('tradeExecuted', {
+      this.emit("tradeExecuted", {
         symbol: signal.symbol,
         action: signal.action,
         price: signal.price,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
-      console.error('Error handling trade signal:', error);
-      this.config.status = 'ERROR';
-      this.emit('error', error);
+      console.error("Error handling trade signal:", error);
+      this.config.status = "ERROR";
+      this.emit("error", error);
     }
   }
 
-  private async executeBuy(signal: TradeSignal, existingPosition?: Position): Promise<void> {
+  private async executeBuy(
+    signal: TradeSignal,
+    existingPosition?: Position,
+  ): Promise<void> {
     // TODO: Implement actual buy execution logic
     // This is a placeholder implementation
     const availableCash = this.cash;
     const maxPosition = this.config.config.maxPositionSize;
     const currentExposure = existingPosition?.totalCost || 0;
     const remainingCapacity = maxPosition - currentExposure;
-    
+
     if (remainingCapacity <= 0) {
       console.log(`Maximum position size reached for ${signal.symbol}`);
       return;
     }
 
-    const sharesToBuy = Math.floor(Math.min(availableCash, remainingCapacity) / signal.price);
-    
+    const sharesToBuy = Math.floor(
+      Math.min(availableCash, remainingCapacity) / signal.price,
+    );
+
     if (sharesToBuy <= 0) {
       console.log(`Insufficient funds to buy ${signal.symbol}`);
       return;
@@ -104,7 +109,7 @@ export class TradingAgent extends EventEmitter {
         symbol: signal.symbol,
         shares: newShares,
         averagePrice: newTotalCost / newShares,
-        totalCost: newTotalCost
+        totalCost: newTotalCost,
       });
     } else {
       // Create new position
@@ -112,12 +117,15 @@ export class TradingAgent extends EventEmitter {
         symbol: signal.symbol,
         shares: sharesToBuy,
         averagePrice: signal.price,
-        totalCost: totalCost
+        totalCost: totalCost,
       });
     }
   }
 
-  private async executeSell(signal: TradeSignal, existingPosition?: Position): Promise<void> {
+  private async executeSell(
+    signal: TradeSignal,
+    existingPosition?: Position,
+  ): Promise<void> {
     // TODO: Implement actual sell execution logic
     // This is a placeholder implementation
     if (!existingPosition || existingPosition.shares <= 0) {
@@ -135,7 +143,7 @@ export class TradingAgent extends EventEmitter {
   updatePortfolioValue(stockData: StockData[]): void {
     let portfolioValue = this.cash;
 
-    stockData.forEach(data => {
+    stockData.forEach((data) => {
       const position = this.positions.get(data.symbol);
       if (position) {
         portfolioValue += position.shares * data.price;
@@ -152,4 +160,4 @@ export class TradingAgent extends EventEmitter {
   getStatus(): AgentConfig {
     return this.config;
   }
-} 
+}

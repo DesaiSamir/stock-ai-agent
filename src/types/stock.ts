@@ -9,16 +9,6 @@ export type TimeInterval =
   | "1w"
   | "1M";
 
-export interface StockData {
-  date: string;
-  price: number;
-  volume?: number;
-  open?: number;
-  high?: number;
-  low?: number;
-  close?: number;
-}
-
 export interface TradingSignal {
   id: string;
   symbol: string;

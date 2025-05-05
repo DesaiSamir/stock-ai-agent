@@ -1,5 +1,5 @@
-import { NewsItem } from '@/types/agent';
-import { HttpClient } from './http-client';
+import { NewsItem } from "@/types/agent";
+import { HttpClient } from "./http-client";
 
 export class NewsService {
   private static instance: NewsService;
@@ -17,18 +17,20 @@ export class NewsService {
   }
 
   public async getNews(symbol?: string): Promise<NewsItem[]> {
-    const url = symbol ? `/news/${symbol}` : '/news';
+    const url = symbol ? `/news/${symbol}` : "/news";
     return this.httpClient.get<NewsItem[]>(url);
   }
 
   public async getLatestNews(limit: number = 10): Promise<NewsItem[]> {
-    return this.httpClient.get<NewsItem[]>('/news/latest', {
-      params: { limit }
+    return this.httpClient.get<NewsItem[]>("/news/latest", {
+      params: { limit },
     });
   }
 
   public async analyzeSentiment(newsId: string): Promise<number> {
-    const response = await this.httpClient.get<{ sentiment: number }>(`/news/${newsId}/sentiment`);
+    const response = await this.httpClient.get<{ sentiment: number }>(
+      `/news/${newsId}/sentiment`,
+    );
     return response.sentiment;
   }
-} 
+}

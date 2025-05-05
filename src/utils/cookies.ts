@@ -1,6 +1,6 @@
-import Cookies from 'js-cookie';
+import Cookies from "js-cookie";
 
-const COOKIE_PREFIX = 'ts_auth_';
+const COOKIE_PREFIX = "ts_auth_";
 const COOKIE_EXPIRY = 30; // 30 days
 
 interface AuthCookies {
@@ -17,8 +17,8 @@ export const cookieUtils = {
         Cookies.set(`${COOKIE_PREFIX}${key}`, String(value), {
           expires: COOKIE_EXPIRY,
           secure: true,
-          sameSite: 'strict',
-          path: '/',
+          sameSite: "strict",
+          path: "/",
         });
       }
     });
@@ -29,17 +29,20 @@ export const cookieUtils = {
       accessToken: Cookies.get(`${COOKIE_PREFIX}accessToken`) || null,
       refreshToken: Cookies.get(`${COOKIE_PREFIX}refreshToken`) || null,
       expiresIn: Number(Cookies.get(`${COOKIE_PREFIX}expiresIn`)) || null,
-      tokenExpiration: Number(Cookies.get(`${COOKIE_PREFIX}tokenExpiration`)) || null
+      tokenExpiration:
+        Number(Cookies.get(`${COOKIE_PREFIX}tokenExpiration`)) || null,
     };
   },
 
   clearAuthCookies: () => {
-    ['accessToken', 'refreshToken', 'expiresIn', 'tokenExpiration'].forEach(key => {
-      Cookies.remove(`${COOKIE_PREFIX}${key}`, {
-        path: '/',
-        secure: true,
-        sameSite: 'strict'
-      });
-    });
-  }
-}; 
+    ["accessToken", "refreshToken", "expiresIn", "tokenExpiration"].forEach(
+      (key) => {
+        Cookies.remove(`${COOKIE_PREFIX}${key}`, {
+          path: "/",
+          secure: true,
+          sameSite: "strict",
+        });
+      },
+    );
+  },
+};

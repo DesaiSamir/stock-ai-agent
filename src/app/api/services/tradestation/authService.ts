@@ -1,4 +1,4 @@
-import { tradestationConfig } from './config';
+import { tradestationConfig } from "./config";
 
 interface TokenInfo {
   access_token: string;
@@ -25,24 +25,27 @@ class AuthService {
   }
 
   private getRedirectUri(host: string): string {
-    const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
+    const protocol = process.env.NODE_ENV === "development" ? "http" : "https";
     return `${protocol}://${host}${tradestationConfig.apiCallback}`;
   }
 
   async exchangeCodeForToken(code: string, host: string): Promise<TokenInfo> {
     const payload = new URLSearchParams({
-      grant_type: 'authorization_code',
+      grant_type: "authorization_code",
       code: code,
       redirect_uri: this.getRedirectUri(host),
       client_id: tradestationConfig.clientId,
-      client_secret: tradestationConfig.clientSecret
+      client_secret: tradestationConfig.clientSecret,
     });
 
-    const response = await fetch(`${tradestationConfig.baseUrlSim}/v2/security/authorize`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: payload.toString(),
-    });
+    const response = await fetch(
+      `${tradestationConfig.baseUrlSim}/v2/security/authorize`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: payload.toString(),
+      },
+    );
 
     if (!response.ok) {
       const error = await response.text();
@@ -55,26 +58,29 @@ class AuthService {
 
   async refreshExpiredToken(refreshToken: string): Promise<TokenInfo> {
     const payload = new URLSearchParams({
-      grant_type: 'refresh_token',
+      grant_type: "refresh_token",
       refresh_token: refreshToken,
       client_id: tradestationConfig.clientId,
       client_secret: tradestationConfig.clientSecret,
-      response_type: 'token'
+      response_type: "token",
     });
 
-    const response = await fetch(`${tradestationConfig.baseUrlSim}/v2/security/authorize`, {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Content-Length': payload.toString().length.toString()
+    const response = await fetch(
+      `${tradestationConfig.baseUrlSim}/v2/security/authorize`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Content-Length": payload.toString().length.toString(),
+        },
+        body: payload.toString(),
       },
-      body: payload.toString(),
-    });
+    );
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('Failed to refresh token:', error);
-      throw new Error('AUTH_REFRESH_FAILED');
+      console.error("Failed to refresh token:", error);
+      throw new Error("AUTH_REFRESH_FAILED");
     }
 
     const tokenInfo: TokenInfo = await response.json();
@@ -82,4 +88,4 @@ class AuthService {
   }
 }
 
-export const authService = AuthService.getInstance(); 
+export const authService = AuthService.getInstance();

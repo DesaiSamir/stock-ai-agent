@@ -1,5 +1,5 @@
-import { ReactNode } from 'react';
-import { cn } from '../../utils/cn';
+import { ReactNode } from "react";
+import { cn } from "../../utils/cn";
 
 interface TabProps {
   label: string;
@@ -23,10 +23,10 @@ export function Tab({ label, isActive, onClick, children }: TabProps) {
     <button
       onClick={onClick}
       className={cn(
-        'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
+        "px-4 py-2 text-sm font-medium border-b-2 transition-colors",
         isActive
-          ? 'border-primary-500 text-primary-500'
-          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+          ? "border-primary-500 text-primary-500"
+          : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300",
       )}
     >
       {label}
@@ -37,7 +37,7 @@ export function Tab({ label, isActive, onClick, children }: TabProps) {
 
 export function Tabs({ tabs, activeTab, onTabChange, className }: TabsProps) {
   return (
-    <div className={cn('flex flex-col h-full', className)}>
+    <div className={cn("flex flex-col h-full", className)}>
       <div className="flex border-b bg-white">
         {tabs.map((tab) => (
           <Tab
@@ -53,4 +53,4 @@ export function Tabs({ tabs, activeTab, onTabChange, className }: TabsProps) {
       </div>
     </div>
   );
-} 
+}

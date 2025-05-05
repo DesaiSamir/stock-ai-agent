@@ -9,9 +9,10 @@ import {
   updateSampleBarData,
 } from "@/data/utils/sampleDataUtils";
 import { http } from "@/utils/http";
-import type { FormattedBarData, StreamPayload } from "@/utils/http";
+import type { StreamPayload } from "@/utils/http";
 import type { QuoteData } from "@/types/tradestation";
 import { useSessionStore } from "@/store/session";
+import { Candlestick } from "@/types/candlestick";
 
 interface UseStockDataOptions {
   symbol: string;
@@ -65,22 +66,8 @@ export function useStockData({
     };
 
     // Handler for barchart data
-    const handleBarData = (barData: FormattedBarData[]) => {
-      const formattedData = barData.map((bar) => {
-        // Extract timestamp number from "/Date(1234567890000)/" format
-        const timestamp = parseInt(bar.timestamp.replace(/[^0-9]/g, ""));
-        return {
-          symbol,
-          date: new Date(timestamp).toISOString(),
-          open: Number(bar.open),
-          high: Number(bar.high),
-          low: Number(bar.low),
-          close: Number(bar.close),
-          volume: Number(bar.volume),
-          price: Number(bar.close), // Use close price as the current price
-        };
-      });
-      updateBarData(symbol, formattedData);
+    const handleBarData = (barData: Candlestick[]) => {
+      updateBarData(symbol, barData);
       setIsLoading(false);
     };
 
@@ -98,7 +85,7 @@ export function useStockData({
         if (mounted) {
           console.error("Failed to fetch bar data:", err);
           setError(
-            err instanceof Error ? err.message : "Failed to fetch bar data"
+            err instanceof Error ? err.message : "Failed to fetch bar data",
           );
           setIsLoading(false);
         }
@@ -151,7 +138,7 @@ export function useStockData({
 
     // Start quote polling
     http
-      .startQuotePolling(symbol, handleQuoteData)
+      .getQuoteDataRecursive(symbol, handleQuoteData)
       .then(() => {
         if (mounted) {
           setError(null);
@@ -161,7 +148,9 @@ export function useStockData({
         if (mounted) {
           console.error("Failed to start quote polling:", err);
           setError(
-            err instanceof Error ? err.message : "Failed to start quote polling"
+            err instanceof Error
+              ? err.message
+              : "Failed to start quote polling",
           );
         }
       });

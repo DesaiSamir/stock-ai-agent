@@ -6,7 +6,9 @@ import { TimeIntervalSelector } from "../core/TimeIntervalSelector";
 import { StockStats } from "../charts/stock-stats";
 import { Box } from "@mui/material";
 import { useStockData } from "../../hooks/useStockData";
-import { CandlestickChart } from "@/components/charts/candlestick/CandlestickChart.client";
+import FinancialChart from "@/components/charts/financial-chart/FinancialChart";
+import { useMarketDataStore } from "@/store/market-data";
+import { Candlestick } from "@/types/candlestick";
 
 interface DynamicStockChartProps {
   symbol: string;
@@ -18,7 +20,6 @@ export const DynamicStockChart: React.FC<DynamicStockChartProps> = ({
   const [interval, setInterval] = useState<TimeInterval>("1m");
   const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   // Handle initial mount
   useEffect(() => {
@@ -32,29 +33,7 @@ export const DynamicStockChart: React.FC<DynamicStockChartProps> = ({
     interval,
   });
 
-  const updateDimensions = useCallback(() => {
-    if (!mounted || !containerRef.current) return;
-    const { width, height } = containerRef.current.getBoundingClientRect();
-    setDimensions({ width, height });
-  }, [mounted]);
-
-  useEffect(() => {
-    if (!mounted || typeof window === "undefined") return;
-
-    updateDimensions();
-    const resizeObserver = new ResizeObserver(updateDimensions);
-
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
-
-    window.addEventListener("resize", updateDimensions);
-
-    return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener("resize", updateDimensions);
-    };
-  }, [updateDimensions, mounted]);
+  const { getBarData } = useMarketDataStore();
 
   const handleIntervalChange = useCallback((newInterval: TimeInterval) => {
     setInterval(newInterval);
@@ -98,6 +77,8 @@ export const DynamicStockChart: React.FC<DynamicStockChartProps> = ({
     );
   }
 
+  const chartData: Candlestick[] = getBarData(symbol) || [];
+
   return (
     <Box
       sx={{
@@ -124,12 +105,11 @@ export const DynamicStockChart: React.FC<DynamicStockChartProps> = ({
           },
         }}
       >
-        {mounted && dimensions.width > 0 && dimensions.height > 0 && (
-          <CandlestickChart
-            symbol={symbol}
-            interval={interval}
-            width={dimensions.width}
-            height={dimensions.height}
+        {mounted && chartData.length > 0 && (
+          <FinancialChart
+            data={chartData}
+            ratio={1}
+            chartText={`${symbol} Stock Chart`}
           />
         )}
       </Box>

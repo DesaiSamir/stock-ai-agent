@@ -14,10 +14,7 @@
       "env": {
         "NODE_OPTIONS": "--inspect"
       },
-      "skipFiles": [
-        "<node_internals>/**",
-        "${workspaceFolder}/node_modules/**"
-      ]
+      "skipFiles": ["<node_internals>/**", "${workspaceFolder}/node_modules/**"]
     }
   ]
-} 
+}

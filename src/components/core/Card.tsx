@@ -1,5 +1,11 @@
-import { Card as MUICard, CardProps as MUICardProps, CardContent, CardHeader, CardActions } from '@mui/material';
-import { ReactNode } from 'react';
+import {
+  Card as MUICard,
+  CardProps as MUICardProps,
+  CardContent,
+  CardHeader,
+  CardActions,
+} from "@mui/material";
+import { ReactNode } from "react";
 
 export interface CardProps extends MUICardProps {
   title?: string;
@@ -8,7 +14,13 @@ export interface CardProps extends MUICardProps {
   actions?: ReactNode;
 }
 
-export const Card = ({ title, subheader, children, actions, ...props }: CardProps) => {
+export const Card = ({
+  title,
+  subheader,
+  children,
+  actions,
+  ...props
+}: CardProps) => {
   return (
     <MUICard {...props}>
       {title && <CardHeader title={title} subheader={subheader} />}
@@ -16,4 +28,4 @@ export const Card = ({ title, subheader, children, actions, ...props }: CardProp
       {actions && <CardActions>{actions}</CardActions>}
     </MUICard>
   );
-}; 
+};

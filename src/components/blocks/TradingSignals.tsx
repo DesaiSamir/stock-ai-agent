@@ -1,23 +1,23 @@
-import React from 'react';
-import { TradingSignal } from '../../types/stock';
-import { Card } from '../core/Card';
-import { Alert } from '../core/Alert';
+import React from "react";
+import { TradingSignal } from "../../types/stock";
+import { Card } from "../core/Card";
+import { Alert } from "../core/Alert";
 
 interface TradingSignalsProps {
   signals: TradingSignal[];
 }
 
 export const TradingSignals: React.FC<TradingSignalsProps> = ({ signals }) => {
-  const getSignalSeverity = (type: TradingSignal['type']) => {
+  const getSignalSeverity = (type: TradingSignal["type"]) => {
     switch (type) {
-      case 'BUY':
-        return 'success';
-      case 'SELL':
-        return 'error';
-      case 'HOLD':
-        return 'warning';
+      case "BUY":
+        return "success";
+      case "SELL":
+        return "error";
+      case "HOLD":
+        return "warning";
       default:
-        return 'info';
+        return "info";
     }
   };
 
@@ -43,4 +43,4 @@ export const TradingSignals: React.FC<TradingSignalsProps> = ({ signals }) => {
       </div>
     </Card>
   );
-}; 
+};

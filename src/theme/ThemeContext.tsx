@@ -62,7 +62,7 @@ export const ThemeProvider = ({ children }: PropsWithChildren) => {
               }),
         },
       }),
-    [mode]
+    [mode],
   );
 
   return (

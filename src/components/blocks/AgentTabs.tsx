@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Box, Tabs, Tab, Typography } from '@mui/material';
-import type { TradingSignal, NewsItem, AgentStatus } from '../../types/stock';
-import { ClientOnlyDate } from '../ClientOnlyDate';
+import React, { useState } from "react";
+import { Box, Tabs, Tab, Typography } from "@mui/material";
+import type { TradingSignal, NewsItem, AgentStatus } from "../../types/stock";
+import { ClientOnlyDate } from "../ClientOnlyDate";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -19,13 +19,9 @@ function TabPanel(props: TabPanelProps) {
       role="tabpanel"
       hidden={value !== index}
       {...other}
-      style={{ height: '100%', overflow: 'auto' }}
+      style={{ height: "100%", overflow: "auto" }}
     >
-      {value === index && (
-        <Box sx={{ p: 2, height: '100%' }}>
-          {children}
-        </Box>
-      )}
+      {value === index && <Box sx={{ p: 2, height: "100%" }}>{children}</Box>}
     </div>
   );
 }
@@ -48,19 +44,21 @@ export const AgentTabs: React.FC<AgentTabsProps> = ({
   };
 
   return (
-    <Box sx={{ 
-      display: 'flex', 
-      flexDirection: 'column',
-      height: '100%',
-      bgcolor: 'background.paper',
-      borderTop: 1,
-      borderColor: 'divider'
-    }}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        bgcolor: "background.paper",
+        borderTop: 1,
+        borderColor: "divider",
+      }}
+    >
       <Tabs
         value={value}
         onChange={handleChange}
         variant="fullWidth"
-        sx={{ borderBottom: 1, borderColor: 'divider', minHeight: 40 }}
+        sx={{ borderBottom: 1, borderColor: "divider", minHeight: 40 }}
       >
         <Tab label="News Agent" sx={{ minHeight: 40 }} />
         <Tab label="Trading Agent" sx={{ minHeight: 40 }} />
@@ -68,20 +66,24 @@ export const AgentTabs: React.FC<AgentTabsProps> = ({
       </Tabs>
 
       <TabPanel value={value} index={0}>
-        <Box sx={{ height: '100%' }}>
+        <Box sx={{ height: "100%" }}>
           {newsItems.map((item) => (
             <Box key={item.id} sx={{ mb: 2 }}>
               <Typography variant="subtitle2">{item.title}</Typography>
               <Typography variant="caption" color="text.secondary">
-                {item.source} - <ClientOnlyDate date={item.publishedAt} formatOptions={{
-                  year: 'numeric',
-                  month: 'numeric',
-                  day: 'numeric',
-                  hour: 'numeric',
-                  minute: 'numeric',
-                  second: 'numeric',
-                  hour12: true,
-                }} />
+                {item.source} -{" "}
+                <ClientOnlyDate
+                  date={item.publishedAt}
+                  formatOptions={{
+                    year: "numeric",
+                    month: "numeric",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "numeric",
+                    second: "numeric",
+                    hour12: true,
+                  }}
+                />
               </Typography>
             </Box>
           ))}
@@ -89,7 +91,7 @@ export const AgentTabs: React.FC<AgentTabsProps> = ({
       </TabPanel>
 
       <TabPanel value={value} index={1}>
-        <Box sx={{ height: '100%' }}>
+        <Box sx={{ height: "100%" }}>
           {tradingSignals.map((signal, index) => (
             <Box key={index} sx={{ mb: 2 }}>
               <Typography variant="subtitle2">
@@ -104,22 +106,26 @@ export const AgentTabs: React.FC<AgentTabsProps> = ({
       </TabPanel>
 
       <TabPanel value={value} index={2}>
-        <Box sx={{ height: '100%' }}>
+        <Box sx={{ height: "100%" }}>
           {agentStatus.map((agent) => (
             <Box key={agent.name} sx={{ mb: 2 }}>
               <Typography variant="subtitle2">
                 {agent.name} - {agent.status}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Last Updated: <ClientOnlyDate date={agent.lastUpdate} formatOptions={{
-                  year: 'numeric',
-                  month: 'numeric',
-                  day: 'numeric',
-                  hour: 'numeric',
-                  minute: 'numeric',
-                  second: 'numeric',
-                  hour12: true,
-                }} />
+                Last Updated:{" "}
+                <ClientOnlyDate
+                  date={agent.lastUpdate}
+                  formatOptions={{
+                    year: "numeric",
+                    month: "numeric",
+                    day: "numeric",
+                    hour: "numeric",
+                    minute: "numeric",
+                    second: "numeric",
+                    hour12: true,
+                  }}
+                />
               </Typography>
             </Box>
           ))}
@@ -127,4 +133,4 @@ export const AgentTabs: React.FC<AgentTabsProps> = ({
       </TabPanel>
     </Box>
   );
-}; 
+};

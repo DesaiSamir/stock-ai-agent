@@ -1,4 +1,5 @@
-import { StockData, TimeInterval } from "../../types/stock";
+import { Candlestick } from "@/types/candlestick";
+import { TimeInterval } from "../../types/stock";
 
 interface GenerateStockDataOptions {
   symbol: string;
@@ -38,8 +39,8 @@ export function generateStockData({
   basePrice = 100,
   volatility = 0.02,
   points = 100,
-}: GenerateStockDataOptions): StockData[] {
-  const data: StockData[] = [];
+}: GenerateStockDataOptions): Candlestick[] {
+  const data: Candlestick[] = [];
   const minutesPerInterval = INTERVAL_TO_MINUTES[interval];
   const now = new Date();
   let currentPrice = basePrice;
@@ -48,7 +49,7 @@ export function generateStockData({
   for (let i = points - 1; i >= 0; i--) {
     // Calculate timestamp for this point
     const timestamp = new Date(
-      now.getTime() - i * minutesPerInterval * 60 * 1000
+      now.getTime() - i * minutesPerInterval * 60 * 1000,
     );
 
     // Generate random price movement
@@ -59,11 +60,11 @@ export function generateStockData({
     const close = Math.round((currentPrice + priceChange) * 100) / 100;
     const high =
       Math.round(
-        (Math.max(open, close) + Math.abs(priceChange) * Math.random()) * 100
+        (Math.max(open, close) + Math.abs(priceChange) * Math.random()) * 100,
       ) / 100;
     const low =
       Math.round(
-        (Math.min(open, close) - Math.abs(priceChange) * Math.random()) * 100
+        (Math.min(open, close) - Math.abs(priceChange) * Math.random()) * 100,
       ) / 100;
 
     // Update current price for next iteration
@@ -81,7 +82,7 @@ export function generateStockData({
       low,
       close,
       volume,
-    } as StockData);
+    } as Candlestick);
   }
 
   return data;

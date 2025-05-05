@@ -1,7 +1,7 @@
-import type { StockData, AgentConfig } from '../../types/agent';
-import { EventEmitter } from 'events';
+import type { StockData, AgentConfig } from "../../types/agent";
+import { EventEmitter } from "events";
 
-interface TickerAgentConfig extends Omit<AgentConfig, 'config'> {
+interface TickerAgentConfig extends Omit<AgentConfig, "config"> {
   config: {
     symbols: string[];
     updateInterval: number;
@@ -22,13 +22,16 @@ export class TickerAgent extends EventEmitter {
   }
 
   async start(): Promise<void> {
-    console.log('Starting Ticker Agent...');
-    this.config.status = 'ACTIVE';
+    console.log("Starting Ticker Agent...");
+    this.config.status = "ACTIVE";
     this.config.lastUpdated = new Date();
-    
+
     // Start the monitoring loop
-    this.monitoringInterval = setInterval(() => this.monitorPrices(), this.updateInterval);
-    
+    this.monitoringInterval = setInterval(
+      () => this.monitorPrices(),
+      this.updateInterval,
+    );
+
     // Initial monitoring
     await this.monitorPrices();
   }
@@ -38,27 +41,27 @@ export class TickerAgent extends EventEmitter {
       clearInterval(this.monitoringInterval);
       this.monitoringInterval = null;
     }
-    this.config.status = 'INACTIVE';
+    this.config.status = "INACTIVE";
   }
 
   private async monitorPrices(): Promise<void> {
     try {
       const stockUpdates = await Promise.all(
-        this.symbols.map(symbol => this.fetchStockPrice(symbol))
+        this.symbols.map((symbol) => this.fetchStockPrice(symbol)),
       );
 
       // Emit updates for each stock
       stockUpdates.forEach((stock: StockData | null) => {
         if (stock) {
-          this.emit('stockUpdate', stock);
+          this.emit("stockUpdate", stock);
         }
       });
 
       this.config.lastUpdated = new Date();
     } catch (error) {
-      console.error('Error monitoring stock prices:', error);
-      this.config.status = 'ERROR';
-      this.emit('error', error);
+      console.error("Error monitoring stock prices:", error);
+      this.config.status = "ERROR";
+      this.emit("error", error);
     }
   }
 
@@ -68,12 +71,12 @@ export class TickerAgent extends EventEmitter {
       // This is a placeholder implementation
       const mockPrice = Math.random() * 1000;
       const mockVolume = Math.floor(Math.random() * 1000000);
-      
+
       return {
         symbol,
         price: mockPrice,
         volume: mockVolume,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       console.error(`Error fetching price for ${symbol}:`, error);
@@ -84,4 +87,4 @@ export class TickerAgent extends EventEmitter {
   getStatus(): AgentConfig {
     return this.config;
   }
-} 
+}
