@@ -1,0 +1,174 @@
+.react-markdown-content {
+    margin: 10px;
+    padding: 10px;
+}
+
+.react-markdown-content > p:first-child,
+.react-markdown-content > div:first-child {
+    margin-top: 0;
+}
+
+.react-markdown-content > p:last-child,
+.react-markdown-content > div:last-child,
+.react-markdown-content > ol:last-child {
+    margin-bottom: 0;
+}
+
+/* Paragraph and text styles */
+.react-markdown-paragraph {
+    margin: 0.5em 0;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+}
+
+.react-markdown-h1 {
+    margin: 1em 0 0.5em;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.react-markdown-h2 {
+    margin: 0.75em 0 0.5em;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.react-markdown-h3 {
+    margin: 0.75em 0 0.5em;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+/* List spacing */
+.react-markdown-list {
+    padding-left: 20px;
+    margin: 0.5em 0;
+}
+
+.react-markdown-list-item {
+    margin: 0.25em 0;
+    font-size: 14px;
+}
+
+.react-markdown-list-item > p {
+    margin: 0.25em 0;
+}
+
+/* Code block styles */
+.react-code-block-wrapper {
+    position: relative;
+    margin: 1em 0;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #1e1e1e;
+    border: 1px solid #3d3d3d;
+}
+
+.react-code-block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 2px 8px;
+    background: #2d2d2d;
+    font-size: 11px;
+    color: #e0e0e0;
+    border-bottom: 1px solid #3d3d3d;
+}
+
+.react-code-language {
+    text-transform: uppercase;
+    font-family: monospace;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+}
+
+.react-code-copy-button {
+    background: transparent;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    padding: 1px;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s;
+}
+
+.react-code-copy-button:hover {
+    color: #fff;
+}
+
+.react-code-copy-button .material-icons {
+    font-size: 14px;
+}
+
+.react-code-block {
+    margin: 0;
+}
+
+.react-code-block pre {
+    margin: 0 !important;
+    border-radius: 0 !important;
+}
+
+/* Inline code */
+.react-inline-code {
+    background-color: rgba(220, 220, 220, 0.1);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: var(--vscode-editor-font-family);
+}
+
+/* Table styles */
+.react-markdown-table-wrapper {
+    margin: 0.75em 0;
+    overflow-x: auto;
+}
+
+.react-markdown-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px;
+    font-family: var(--vscode-editor-font-family);
+    background: var(--vscode-editor-background);
+    color: var(--vscode-editor-foreground);
+    border: 1px solid var(--vscode-panel-border);
+}
+
+.react-markdown-table th,
+.react-markdown-table td {
+    padding: 8px 12px;
+    border: 1px solid var(--vscode-panel-border);
+    text-align: left;
+    vertical-align: top;
+}
+
+.react-markdown-table th {
+    background-color: var(--vscode-editorGroupHeader-tabsBackground);
+    font-weight: 600;
+}
+
+.react-markdown-table tr:nth-child(even) {
+    background-color: var(--vscode-editorWidget-background);
+}
+
+/* Typing animation */
+.typing-cursor {
+    display: inline-block;
+    width: 0.4em;
+    height: 1.2em;
+    background-color: var(--vscode-editor-foreground);
+    margin-left: 2px;
+    vertical-align: middle;
+    animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* Ensure code inside pre has no background */
+pre code {
+    background: none !important;
+}

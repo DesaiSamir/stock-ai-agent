@@ -1,30 +1,18 @@
-import type { StockData, TradeSignal, AgentConfig } from "../../types/agent";
 import { EventEmitter } from "events";
-
-interface AnalysisAgentConfig extends Omit<AgentConfig, "config"> {
-  config: {
-    symbols: string[];
-    updateInterval: number;
-    technicalIndicators: string[];
-    fundamentalMetrics: string[];
-  };
-}
+import type { 
+  AnalysisAgentConfig, 
+  TradeSignal, 
+  StockData, 
+  AgentConfig 
+} from "../../types/agent";
 
 export class AnalysisAgent extends EventEmitter {
   private config: AnalysisAgentConfig;
-  private symbols: string[];
-  private updateInterval: number;
-  private technicalIndicators: string[];
-  private fundamentalMetrics: string[];
   private monitoringInterval: NodeJS.Timeout | null = null;
 
   constructor(config: AnalysisAgentConfig) {
     super();
     this.config = config;
-    this.symbols = config.config.symbols;
-    this.updateInterval = config.config.updateInterval;
-    this.technicalIndicators = config.config.technicalIndicators;
-    this.fundamentalMetrics = config.config.fundamentalMetrics;
   }
 
   async start(): Promise<void> {
@@ -35,7 +23,7 @@ export class AnalysisAgent extends EventEmitter {
     // Start the monitoring loop
     this.monitoringInterval = setInterval(
       () => this.analyzeStocks(),
-      this.updateInterval,
+      this.config.config.updateInterval,
     );
 
     // Initial analysis
@@ -53,7 +41,7 @@ export class AnalysisAgent extends EventEmitter {
   private async analyzeStocks(): Promise<void> {
     try {
       const analysisResults = await Promise.all(
-        this.symbols.map((symbol) => this.analyzeStock(symbol)),
+        this.config.config.symbols.map((symbol) => this.analyzeStock(symbol)),
       );
 
       // Emit analysis results
@@ -86,7 +74,7 @@ export class AnalysisAgent extends EventEmitter {
         price: mockPrice,
         confidence: mockConfidence,
         timestamp: new Date().toISOString(),
-        reason: `Analysis based on ${this.technicalIndicators.length} technical indicators and ${this.fundamentalMetrics.length} fundamental metrics`,
+        reason: `Analysis based on ${this.config.config.technicalIndicators.length} technical indicators and ${this.config.config.fundamentalMetrics.length} fundamental metrics`,
       };
     } catch (error) {
       console.error(`Error analyzing ${symbol}:`, error);
@@ -95,11 +83,11 @@ export class AnalysisAgent extends EventEmitter {
   }
 
   private async calculateTechnicalIndicators(
-    _stockData: StockData[],
+    stockData: StockData[],
   ): Promise<Record<string, number>> {
     // TODO: Implement actual technical analysis calculations
-    console.log("Calculating technical indicators...", _stockData);
-    return this.technicalIndicators.reduce(
+    console.log("Calculating technical indicators...", stockData);
+    return this.config.config.technicalIndicators.reduce(
       (acc, indicator) => {
         acc[indicator] = Math.random(); // Placeholder values
         return acc;
@@ -109,11 +97,11 @@ export class AnalysisAgent extends EventEmitter {
   }
 
   private async analyzeFundamentals(
-    _symbol: string,
+    symbol: string,
   ): Promise<Record<string, number>> {
     // TODO: Implement actual fundamental analysis calculations
-    console.log("Analyzing fundamentals...", _symbol);
-    return this.fundamentalMetrics.reduce(
+    console.log("Analyzing fundamentals...", symbol);
+    return this.config.config.fundamentalMetrics.reduce(
       (acc, metric) => {
         acc[metric] = Math.random(); // Placeholder values
         return acc;

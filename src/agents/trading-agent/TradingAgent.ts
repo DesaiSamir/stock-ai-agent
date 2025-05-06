@@ -1,21 +1,12 @@
-import type { TradeSignal, StockData, AgentConfig } from "../../types/agent";
 import { EventEmitter } from "events";
-
-interface TradingAgentConfig extends Omit<AgentConfig, "config"> {
-  config: {
-    symbols: string[];
-    minConfidence: number;
-    maxPositionSize: number;
-    riskLimit: number;
-  };
-}
-
-interface Position {
-  symbol: string;
-  shares: number;
-  averagePrice: number;
-  totalCost: number;
-}
+import type { 
+  TradeSignal, 
+  StockData, 
+  TradingAgentConfig, 
+  AgentConfig,
+  TradeExecution,
+  Position
+} from "../../types/agent";
 
 export class TradingAgent extends EventEmitter {
   private config: TradingAgentConfig;
@@ -54,9 +45,8 @@ export class TradingAgent extends EventEmitter {
         case "SELL":
           await this.executeSell(signal, position);
           break;
-        case "HOLD":
-          console.log(`Holding position for ${signal.symbol}`);
-          break;
+        default:
+          console.log(`Unknown action ${signal.action} for ${signal.symbol}`);
       }
 
       this.config.lastUpdated = new Date();
@@ -64,8 +54,9 @@ export class TradingAgent extends EventEmitter {
         symbol: signal.symbol,
         action: signal.action,
         price: signal.price,
-        timestamp: new Date().toISOString(),
-      });
+        quantity: position?.quantity || 0,
+        timestamp: new Date()
+      } as TradeExecution);
     } catch (error) {
       console.error("Error handling trade signal:", error);
       this.config.status = "ERROR";
@@ -77,11 +68,9 @@ export class TradingAgent extends EventEmitter {
     signal: TradeSignal,
     existingPosition?: Position,
   ): Promise<void> {
-    // TODO: Implement actual buy execution logic
-    // This is a placeholder implementation
     const availableCash = this.cash;
     const maxPosition = this.config.config.maxPositionSize;
-    const currentExposure = existingPosition?.totalCost || 0;
+    const currentExposure = existingPosition ? existingPosition.quantity * existingPosition.averagePrice : 0;
     const remainingCapacity = maxPosition - currentExposure;
 
     if (remainingCapacity <= 0) {
@@ -103,21 +92,23 @@ export class TradingAgent extends EventEmitter {
 
     if (existingPosition) {
       // Update existing position
-      const newShares = existingPosition.shares + sharesToBuy;
-      const newTotalCost = existingPosition.totalCost + totalCost;
+      const newQuantity = existingPosition.quantity + sharesToBuy;
+      const newAveragePrice = (existingPosition.quantity * existingPosition.averagePrice + totalCost) / newQuantity;
       this.positions.set(signal.symbol, {
         symbol: signal.symbol,
-        shares: newShares,
-        averagePrice: newTotalCost / newShares,
-        totalCost: newTotalCost,
+        quantity: newQuantity,
+        averagePrice: newAveragePrice,
+        currentPrice: signal.price,
+        unrealizedPnL: (signal.price - newAveragePrice) * newQuantity
       });
     } else {
       // Create new position
       this.positions.set(signal.symbol, {
         symbol: signal.symbol,
-        shares: sharesToBuy,
+        quantity: sharesToBuy,
         averagePrice: signal.price,
-        totalCost: totalCost,
+        currentPrice: signal.price,
+        unrealizedPnL: 0
       });
     }
   }
@@ -126,14 +117,12 @@ export class TradingAgent extends EventEmitter {
     signal: TradeSignal,
     existingPosition?: Position,
   ): Promise<void> {
-    // TODO: Implement actual sell execution logic
-    // This is a placeholder implementation
-    if (!existingPosition || existingPosition.shares <= 0) {
+    if (!existingPosition || existingPosition.quantity <= 0) {
       console.log(`No position to sell for ${signal.symbol}`);
       return;
     }
 
-    const proceeds = existingPosition.shares * signal.price;
+    const proceeds = existingPosition.quantity * signal.price;
     this.cash += proceeds;
 
     // Clear the position
@@ -146,7 +135,10 @@ export class TradingAgent extends EventEmitter {
     stockData.forEach((data) => {
       const position = this.positions.get(data.symbol);
       if (position) {
-        portfolioValue += position.shares * data.price;
+        const currentValue = position.quantity * data.price;
+        position.currentPrice = data.price;
+        position.unrealizedPnL = (data.price - position.averagePrice) * position.quantity;
+        portfolioValue += currentValue;
       }
     });
 

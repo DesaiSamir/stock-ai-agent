@@ -1,4 +1,5 @@
 export interface Candlestick {
+  symbol: string;
   date: string;
   timestamp: string;
   open: number;

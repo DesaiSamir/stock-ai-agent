@@ -8,9 +8,10 @@ interface NewsFeedProps {
 }
 
 export const NewsFeed: React.FC<NewsFeedProps> = ({ items }) => {
-  const getSentimentSeverity = (sentiment: number) => {
-    if (sentiment > 0.5) return "success";
-    if (sentiment < -0.5) return "error";
+  const getSentimentSeverity = (sentiment: number | string | undefined) => {
+    const numericSentiment = typeof sentiment === 'string' ? parseFloat(sentiment) : sentiment || 0;
+    if (numericSentiment > 0.5) return "success";
+    if (numericSentiment < -0.5) return "error";
     return "info";
   };
 

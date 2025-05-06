@@ -1,136 +1,175 @@
 "use client";
 
-import React, { useState } from "react";
-import { Box, Tabs, Tab, Typography } from "@mui/material";
-import type { TradingSignal, NewsItem, AgentStatus } from "../../types/stock";
-import { ClientOnlyDate } from "../ClientOnlyDate";
+import React from "react";
+import { Box, Typography, Card, CardHeader, CardContent } from "@mui/material";
+import { useAgentMonitoringStore } from "@/store/agent-monitoring";
 
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
+export const AgentTabs: React.FC = () => {
+  const { latestPrices, latestSignals, recentTrades } = useAgentMonitoringStore();
 
   return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      {...other}
-      style={{ height: "100%", overflow: "auto" }}
-    >
-      {value === index && <Box sx={{ p: 2, height: "100%" }}>{children}</Box>}
-    </div>
-  );
-}
-
-interface AgentTabsProps {
-  tradingSignals: TradingSignal[];
-  newsItems: NewsItem[];
-  agentStatus: AgentStatus[];
-}
-
-export const AgentTabs: React.FC<AgentTabsProps> = ({
-  tradingSignals,
-  newsItems,
-  agentStatus,
-}) => {
-  const [value, setValue] = useState(0);
-
-  const handleChange = (event: React.SyntheticEvent, newValue: number) => {
-    setValue(newValue);
-  };
-
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        bgcolor: "background.paper",
-        borderTop: 1,
-        borderColor: "divider",
-      }}
-    >
-      <Tabs
-        value={value}
-        onChange={handleChange}
-        variant="fullWidth"
-        sx={{ borderBottom: 1, borderColor: "divider", minHeight: 40 }}
-      >
-        <Tab label="News Agent" sx={{ minHeight: 40 }} />
-        <Tab label="Trading Agent" sx={{ minHeight: 40 }} />
-        <Tab label="Analysis Agent" sx={{ minHeight: 40 }} />
-      </Tabs>
-
-      <TabPanel value={value} index={0}>
-        <Box sx={{ height: "100%" }}>
-          {newsItems.map((item) => (
-            <Box key={item.id} sx={{ mb: 2 }}>
-              <Typography variant="subtitle2">{item.title}</Typography>
-              <Typography variant="caption" color="text.secondary">
-                {item.source} -{" "}
-                <ClientOnlyDate
-                  date={item.publishedAt}
-                  formatOptions={{
-                    year: "numeric",
-                    month: "numeric",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "numeric",
-                    second: "numeric",
-                    hour12: true,
-                  }}
-                />
+    <Box sx={{
+      display: "grid",
+      gridTemplateColumns: "repeat(4, 1fr)",
+      gap: 1,
+      p: 1,
+      height: "100%",
+      overflow: "hidden"
+    }}>
+      {/* News Agent Card */}
+      <Card sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <CardHeader 
+          title="News Agent" 
+          sx={{
+            bgcolor: 'primary.main', 
+            color: 'primary.contrastText',
+            p: 1,
+            '& .MuiCardHeader-title': {
+              fontSize: '1rem',
+              fontWeight: 'bold'
+            }
+          }} 
+        />
+        <CardContent sx={{ 
+          flex: 1, 
+          overflow: 'auto',
+          p: 1,
+          '&:last-child': { pb: 1 }
+        }}>
+          {latestSignals.filter(signal => signal.source === 'NEWS').map((signal, index) => (
+            <Box key={index} sx={{ 
+              mb: 1, 
+              p: 1, 
+              bgcolor: 'background.default',
+              borderRadius: 1
+            }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                {signal.symbol} - {signal.action} @ ${signal.price.toFixed(2)}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" display="block">
+                Confidence: {(signal.confidence * 100).toFixed(1)}%
               </Typography>
             </Box>
           ))}
-        </Box>
-      </TabPanel>
+        </CardContent>
+      </Card>
 
-      <TabPanel value={value} index={1}>
-        <Box sx={{ height: "100%" }}>
-          {tradingSignals.map((signal, index) => (
-            <Box key={index} sx={{ mb: 2 }}>
-              <Typography variant="subtitle2">
-                {signal.symbol} - {signal.type} @ ${signal.price}
+      {/* Trading Agent Card */}
+      <Card sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <CardHeader 
+          title="Trading Agent" 
+          sx={{ 
+            bgcolor: 'primary.main', 
+            color: 'primary.contrastText',
+            p: 1,
+            '& .MuiCardHeader-title': {
+              fontSize: '1rem',
+              fontWeight: 'bold'
+            }
+          }} 
+        />
+        <CardContent sx={{ 
+          flex: 1, 
+          overflow: 'auto',
+          p: 1,
+          '&:last-child': { pb: 1 }
+        }}>
+          {recentTrades.map((trade, index) => (
+            <Box key={index} sx={{ 
+              mb: 1, 
+              p: 1, 
+              bgcolor: 'background.default',
+              borderRadius: 1
+            }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                {trade.symbol} - {trade.action} {trade.quantity} shares @ ${trade.price.toFixed(2)}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Confidence: {signal.confidence}% - {signal.reason}
+              <Typography variant="caption" color="text.secondary" display="block">
+                {new Date(trade.timestamp).toLocaleString()}
               </Typography>
             </Box>
           ))}
-        </Box>
-      </TabPanel>
+        </CardContent>
+      </Card>
 
-      <TabPanel value={value} index={2}>
-        <Box sx={{ height: "100%" }}>
-          {agentStatus.map((agent) => (
-            <Box key={agent.name} sx={{ mb: 2 }}>
-              <Typography variant="subtitle2">
-                {agent.name} - {agent.status}
+      {/* Analysis Agent Card */}
+      <Card sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <CardHeader 
+          title="Analysis Agent" 
+          sx={{ 
+            bgcolor: 'primary.main', 
+            color: 'primary.contrastText',
+            p: 1,
+            '& .MuiCardHeader-title': {
+              fontSize: '1rem',
+              fontWeight: 'bold'
+            }
+          }} 
+        />
+        <CardContent sx={{ 
+          flex: 1, 
+          overflow: 'auto',
+          p: 1,
+          '&:last-child': { pb: 1 }
+        }}>
+          {latestSignals.filter(signal => signal.source === 'ANALYSIS').map((signal, index) => (
+            <Box key={index} sx={{ 
+              mb: 1, 
+              p: 1, 
+              bgcolor: 'background.default',
+              borderRadius: 1
+            }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                {signal.symbol} - {signal.action} @ ${signal.price.toFixed(2)}
               </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Last Updated:{" "}
-                <ClientOnlyDate
-                  date={agent.lastUpdate}
-                  formatOptions={{
-                    year: "numeric",
-                    month: "numeric",
-                    day: "numeric",
-                    hour: "numeric",
-                    minute: "numeric",
-                    second: "numeric",
-                    hour12: true,
-                  }}
-                />
+              <Typography variant="caption" color="text.secondary" display="block">
+                Confidence: {(signal.confidence * 100).toFixed(1)}%
               </Typography>
             </Box>
           ))}
-        </Box>
-      </TabPanel>
+        </CardContent>
+      </Card>
+
+      {/* Ticker Agent Card */}
+      <Card sx={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <CardHeader 
+          title="Ticker Agent" 
+          sx={{ 
+            bgcolor: 'primary.main', 
+            color: 'primary.contrastText',
+            p: 1,
+            '& .MuiCardHeader-title': {
+              fontSize: '1rem',
+              fontWeight: 'bold'
+            }
+          }} 
+        />
+        <CardContent sx={{ 
+          flex: 1, 
+          overflow: 'auto',
+          p: 1,
+          '&:last-child': { pb: 1 }
+        }}>
+          {Object.entries(latestPrices).map(([symbol, data]) => (
+            <Box key={symbol} sx={{ 
+              mb: 1, 
+              p: 1, 
+              bgcolor: 'background.default',
+              borderRadius: 1
+            }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 'bold' }}>
+                {symbol}: ${data.close.toFixed(2)}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" display="block">
+                Volume: {data.volume.toLocaleString()} | {new Date(data.timestamp).toLocaleTimeString()}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" display="block">
+                O: ${data.open.toFixed(2)} H: ${data.high.toFixed(2)} L: ${data.low.toFixed(2)}
+              </Typography>
+            </Box>
+          ))}
+        </CardContent>
+      </Card>
     </Box>
   );
 };

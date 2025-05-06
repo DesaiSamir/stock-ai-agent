@@ -11,6 +11,7 @@ import type { Candlestick } from "@/types/candlestick";
 import axios from "axios";
 import { cookieUtils } from "@/utils/cookies";
 import { patternDetector } from "@/services/patternDetector";
+import { useMarketDataStore } from "@/store/market-data";
 
 export interface StreamPayload {
   symbol: string;
@@ -73,28 +74,12 @@ export const http = {
     if (this.isQuoteFetching) return;
 
     try {
-      const store = useSessionStore.getState();
-
-      // Validate/refresh tokens before proceeding
-      const isValid = await this.validateTokens();
-      if (!isValid || !store.accessToken) {
-        throw new Error("Failed to validate access token");
-      }
-
       if (this.isRegularSessionTime()) {
         this.isQuoteFetching = true;
-        const response = await axios.get(`/api/tradestation/quote`, {
-          params: {
-            symbols: symbol,
-            token: store.accessToken,
-          },
-        });
-        if (
-          response.data &&
-          Array.isArray(response.data) &&
-          response.data.length > 0
-        ) {
-          callback(response.data[0]);
+        const response = await this.get<QuoteData[]>(`/api/tradestation/quote?symbols=${encodeURIComponent(symbol)}`);
+        
+        if (Array.isArray(response) && response.length > 0) {
+          callback(response[0]);
         }
       }
     } catch (error) {
@@ -142,14 +127,6 @@ export const http = {
     this.clearBarChartInterval();
 
     try {
-      const store = useSessionStore.getState();
-
-      // Validate/refresh tokens before proceeding
-      const isValid = await this.validateTokens();
-      if (!isValid || !store.accessToken) {
-        throw new Error("Failed to validate access token");
-      }
-
       // Function to fetch data
       const fetchData = async () => {
         // If a bar fetch is already in progress, skip this one
@@ -168,15 +145,10 @@ export const http = {
 
             const url = `/v2/stream/barchart/${barchartRequest.symbol}/${barchartRequest.interval}/${barchartRequest.unit}/${barchartRequest.barsBack}/${barchartRequest.lastDate}${barchartRequest.sessionTemplate ? `?SessionTemplate=${barchartRequest.sessionTemplate}` : ""}`;
 
-            const response = await axios.get(`/api/tradestation/barchart`, {
-              params: {
-                url: url,
-                token: store.accessToken,
-              },
-            });
+            const data = await this.get<BarData[]>(`/api/tradestation/barchart?url=${encodeURIComponent(url)}`);
 
-            if (Array.isArray(response.data)) {
-              callback(this.formatBarDataArray(response.data));
+            if (Array.isArray(data)) {
+              callback(this.formatBarDataArray(data));
             }
           }
         } catch (error) {
@@ -246,6 +218,7 @@ export const http = {
       pattern: "",
       patternType: undefined,
       candle: undefined,
+      symbol: useMarketDataStore.getState().currentSymbol,
     } as Candlestick;
   },
 
@@ -424,16 +397,39 @@ export const http = {
         throw new Error("AUTH_INVALID");
       }
 
-      const response = await axios({
-        method,
-        url,
-        data: payload,
-        headers: {
-          Authorization: `Bearer ${store.accessToken}`,
-        },
-      });
+      // Get fresh store state after validation
+      const updatedStore = useSessionStore.getState();
+      if (!updatedStore.accessToken) {
+        throw new Error("No access token available");
+      }
 
-      return response.data;
+      // For GET requests, append token to URL
+      const finalUrl = method.toUpperCase() === 'GET' 
+        ? `${url}${url.includes('?') ? '&' : '?'}token=${updatedStore.accessToken}`
+        : url;
+
+      const config: {
+        method: string;
+        url: string;
+        data?: unknown;
+        params?: unknown;
+      } = {
+        method,
+        url: finalUrl,
+      };
+
+      if (method.toUpperCase() !== 'GET' && payload) {
+        config.data = payload;
+      }
+
+      if (method.toUpperCase() === 'GET' && payload) {
+        config.params = payload;
+      }
+
+      const response = await axios(config);
+      
+      // Ensure we're returning the actual data array from the response
+      return response.data?.data || response.data;
     } catch (error) {
       if (error instanceof Error) {
         this.handleAuthError(error);

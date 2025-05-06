@@ -118,19 +118,7 @@ export function useStockData({
 
     const handleQuoteData = (quoteData: QuoteData) => {
       if (!quoteData) return;
-
-      // Only update if we have a timestamp and it's current
-      if (quoteData.TradeTime) {
-        const quoteTime = new Date(quoteData.TradeTime).getTime();
-        const now = Date.now();
-        const fiveMinutesAgo = now - 5 * 60 * 1000;
-
-        // Skip if quote is older than 5 minutes
-        if (quoteTime < fiveMinutesAgo) {
-          return;
-        }
-      }
-
+      
       updateQuote(symbol, quoteData);
     };
 

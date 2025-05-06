@@ -8,9 +8,19 @@ import { DynamicStockChart } from "../blocks/DynamicStockChart";
 import { AgentTabs } from "../blocks/AgentTabs";
 import { Box, Divider } from "@mui/material";
 import { useMarketDataStore } from "@/store/market-data";
+import { AnalysisDashboard } from "../features/analysis/AnalysisDashboard";
+import { AgentDashboard } from "@/components/features/agent-dashboard/AgentDashboard";
+import { AgentOrchestrator } from "@/agents/AgentOrchestrator";
 
 interface StockDashboardProps {
   initialChartHeight?: number;
+}
+
+// Add type declaration for window with orchestrator
+declare global {
+  interface Window {
+    orchestrator?: AgentOrchestrator;
+  }
 }
 
 export const StockDashboard: React.FC<StockDashboardProps> = ({
@@ -19,10 +29,41 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
   const [chartHeight, setChartHeight] = useState(initialChartHeight);
   const [isDragging, setIsDragging] = useState(false);
   const [activeAgent, setActiveAgent] = useState<
-    "chart" | "dynamic-chart" | "news" | "trading" | "analysis"
+    "chart" | "dynamic-chart" | "news" | "trading" | "analysis" | "dashboard"
   >("dynamic-chart");
+  const [orchestrator, setOrchestrator] = useState<AgentOrchestrator | null>(null);
 
-  const { setCurrentSymbol, currentSymbol } = useMarketDataStore();
+  const { setCurrentSymbol, currentSymbol, barData } = useMarketDataStore();
+
+  // Initialize orchestrator
+  useEffect(() => {
+    const newOrchestrator = new AgentOrchestrator({
+      symbols: ['AAPL'],
+      updateInterval: 60000,
+      technicalIndicators: ['EMA', 'RSI', 'MACD', 'BB'],
+      fundamentalMetrics: ['PE', 'PB', 'ROE', 'DEBT_EQUITY'],
+      minConfidence: 0.7,
+      maxPositionSize: 100000,
+      riskLimit: 0.02,
+      newsSources: ['reuters', 'bloomberg', 'wsj'],
+      dataSource: 'alpha-vantage',
+    });
+    
+    // Make orchestrator globally available
+    window.orchestrator = newOrchestrator;
+    setOrchestrator(newOrchestrator);
+
+    // Start the orchestrator
+    newOrchestrator.start();
+
+    return () => {
+      if (newOrchestrator) {
+        newOrchestrator.stop();
+        // Clean up global reference
+        delete window.orchestrator;
+      }
+    };
+  }, []);
 
   // Set initial symbol if none is selected
   useEffect(() => {
@@ -66,15 +107,20 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
 
     switch (activeAgent) {
       case "chart":
-      // return <StockChart symbol={currentSymbol} />;
+        return null; // <StockChart symbol={currentSymbol} />;
       case "dynamic-chart":
         return <DynamicStockChart symbol={currentSymbol} />;
       case "news":
       case "trading":
+        return null;
       case "analysis":
+        return <AnalysisDashboard symbol={currentSymbol} marketData={barData[currentSymbol] || []} />;
+      case "dashboard":
+        if (orchestrator) {
+          return <AgentDashboard orchestrator={orchestrator} />;
+        }
         return null;
       default:
-        // return <StockChart symbol={currentSymbol} />;
         return null;
     }
   };
@@ -94,47 +140,58 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
         }}
         onMouseMove={handleMouseMove}
       >
-        {/* Chart Area - Dynamic height */}
-        <Box
-          sx={{
-            height: `${chartHeight}%`,
-            minHeight: "20%",
-            maxHeight: "80%",
-            width: "100%",
-            position: "relative",
-            overflow: "hidden",
-          }}
-        >
-          {renderChartComponent()}
-        </Box>
+        {activeAgent === "dashboard" ? (
+          // Render AgentDashboard without the chart/divider layout
+          <Box sx={{ height: "100%", overflow: "auto" }}>
+            {orchestrator && <AgentDashboard orchestrator={orchestrator} />}
+          </Box>
+        ) : (
+          // Render normal chart/divider layout
+          <>
+            <Box
+              sx={{
+                height: `${chartHeight}%`,
+                minHeight: "20%",
+                maxHeight: "80%",
+                width: "100%",
+                position: "relative",
+                overflow: "hidden",
+              }}
+            >
+              {renderChartComponent()}
+            </Box>
 
-        {/* Draggable Divider */}
-        <Divider
-          onMouseDown={handleMouseDown}
-          sx={{
-            cursor: "row-resize",
-            height: "4px",
-            bgcolor: "divider",
-            "&:hover": {
-              bgcolor: "primary.main",
-              opacity: 0.7,
-            },
-            ...(isDragging && {
-              bgcolor: "primary.main",
-              opacity: 0.7,
-            }),
-          }}
-        />
+            <Divider
+              onMouseDown={handleMouseDown}
+              sx={{
+                cursor: "row-resize",
+                height: "4px",
+                bgcolor: "divider",
+                "&:hover": {
+                  bgcolor: "primary.main",
+                  opacity: 0.7,
+                },
+                ...(isDragging && {
+                  bgcolor: "primary.main",
+                  opacity: 0.7,
+                }),
+              }}
+            />
 
-        {/* Agent Tabs - Remaining height */}
-        <Box
-          sx={{
-            flexGrow: 1,
-            overflow: "auto",
-          }}
-        >
-          <AgentTabs tradingSignals={[]} newsItems={[]} agentStatus={[]} />
-        </Box>
+            <Box
+              sx={{
+                flexGrow: 1,
+                overflow: "auto",
+                height: `${100 - chartHeight}%`,
+                minHeight: "20%",
+                maxHeight: "80%",
+                pb: 5,
+              }}
+            >
+              <AgentTabs />
+            </Box>
+          </>
+        )}
       </Box>
     </Box>
   );

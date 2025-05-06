@@ -10,13 +10,14 @@ import {
   Menu,
   ChevronLeft,
   BarChart,
+  Dashboard,
 } from "@mui/icons-material";
 
 interface AgentToolbarProps {
   onSelectAgent?: (
-    agent: "chart" | "dynamic-chart" | "news" | "trading" | "analysis",
+    agent: "chart" | "dynamic-chart" | "news" | "trading" | "analysis" | "dashboard",
   ) => void;
-  activeAgent?: "chart" | "dynamic-chart" | "news" | "trading" | "analysis";
+  activeAgent?: "chart" | "dynamic-chart" | "news" | "trading" | "analysis" | "dashboard";
 }
 
 interface ToolbarItemProps {
@@ -97,6 +98,13 @@ export const AgentToolbar: React.FC<AgentToolbarProps> = ({
       />
 
       <Box sx={{ mt: 2 }}>
+        <ToolbarItem
+          icon={<Dashboard />}
+          label="Agent Dashboard"
+          onClick={() => onSelectAgent?.("dashboard")}
+          isActive={activeAgent === "dashboard"}
+          isExpanded={isExpanded}
+        />
         <ToolbarItem
           icon={<ShowChart />}
           label="Chart View"
