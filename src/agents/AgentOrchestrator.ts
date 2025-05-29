@@ -23,6 +23,12 @@ interface OrchestratorConfig {
   dataSource: string;
 }
 
+// Store interface for what the orchestrator needs
+interface StoreInterface {
+  isOrchestratorRunning: boolean;
+  setOrchestratorRunning: (running: boolean) => void;
+}
+
 export class AgentOrchestrator extends EventEmitter {
   private analysisAgent: AnalysisAgent;
   private tradingAgent: TradingAgent;
@@ -30,6 +36,7 @@ export class AgentOrchestrator extends EventEmitter {
   private tickerAgent: TickerAgent;
   private config: OrchestratorConfig;
   private isRunning: boolean = false;
+  private store: StoreInterface | null = null;
 
   constructor(config: OrchestratorConfig) {
     super();
@@ -90,6 +97,11 @@ export class AgentOrchestrator extends EventEmitter {
     this.setupEventHandlers();
   }
 
+  // Method to set the store interface
+  setStore(store: StoreInterface) {
+    this.store = store;
+  }
+
   private setupEventHandlers(): void {
     // Handle ticker data updates
     this.tickerAgent.on("priceUpdate", (stockData: StockData) => {
@@ -129,14 +141,16 @@ export class AgentOrchestrator extends EventEmitter {
   private handleAgentError(error: Error, agent: EventEmitter): void {
     console.error(`Agent error:`, error);
     this.emit("error", { agent, error });
-
-    // Implement recovery logic here
-    // For now, we'll just emit the error event
   }
 
   async start(): Promise<void> {
-    if (this.isRunning) {
-      console.log("Orchestrator is already running");
+    if (!this.store) {
+      throw new Error("Store not initialized. Call setStore before starting the orchestrator.");
+    }
+    
+    // Check both local and persisted running state
+    if (this.isRunning || this.store.isOrchestratorRunning) {
+      console.log("Orchestrator is already running (either locally or in persisted state)");
       return;
     }
 
@@ -150,16 +164,23 @@ export class AgentOrchestrator extends EventEmitter {
       await this.tradingAgent.start();
 
       this.isRunning = true;
+      this.store.setOrchestratorRunning(true);
       this.emit("started");
     } catch (error) {
       console.error("Error starting orchestrator:", error);
+      this.isRunning = false;
+      this.store.setOrchestratorRunning(false);
       await this.stop();
       throw error;
     }
   }
 
   async stop(): Promise<void> {
-    if (!this.isRunning) {
+    if (!this.store) {
+      throw new Error("Store not initialized. Call setStore before stopping the orchestrator.");
+    }
+
+    if (!this.isRunning && !this.store.isOrchestratorRunning) {
       console.log("Orchestrator is already stopped");
       return;
     }
@@ -174,9 +195,13 @@ export class AgentOrchestrator extends EventEmitter {
       await this.tickerAgent.stop();
 
       this.isRunning = false;
+      this.store.setOrchestratorRunning(false);
       this.emit("stopped");
     } catch (error) {
       console.error("Error stopping orchestrator:", error);
+      // Still mark as stopped even on error to allow retry
+      this.isRunning = false;
+      this.store.setOrchestratorRunning(false);
       throw error;
     }
   }

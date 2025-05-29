@@ -1,26 +1,50 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AgentOrchestrator } from '@/agents/AgentOrchestrator';
 import { useAgentMonitoringStore } from '@/store/agent-monitoring';
-import { TradingAgent, TickerAgent, AnalysisAgent, NewsAgent } from '@/types/agent';
-import { Candlestick } from '@/types/candlestick';
 
-export function useAgentOrchestrator(orchestrator: AgentOrchestrator) {
+// Extend Window interface to include our global orchestrator
+declare global {
+  interface Window {
+    orchestrator?: AgentOrchestrator;
+  }
+}
+
+export function useAgentOrchestrator() {
+  const [isClient, setIsClient] = useState(false);
   const {
     updateAgentStatuses,
     addTradeExecution,
     updatePrice,
-    addSignal
+    addSignal,
+    isOrchestratorRunning,
+    setOrchestratorRunning
   } = useAgentMonitoringStore();
 
+  // Handle client-side only initialization
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    // Skip if not client-side yet
+    if (!isClient) return;
+
+    // Get the orchestrator instance from the window object
+    const orchestrator = window.orchestrator;
+    if (!orchestrator) return;
+
     const setupEventListeners = () => {
+      // Clear any existing listeners
+      orchestrator.removeAllListeners();
+
+      // Setup new listeners
       orchestrator.on('started', () => {
-        console.log('Orchestrator started');
+        setOrchestratorRunning(true);
         updateAgentStatuses();
       });
 
       orchestrator.on('stopped', () => {
-        console.log('Orchestrator stopped');
+        setOrchestratorRunning(false);
         updateAgentStatuses();
       });
 
@@ -29,29 +53,29 @@ export function useAgentOrchestrator(orchestrator: AgentOrchestrator) {
         updateAgentStatuses();
       });
 
-      // Get agent instances with proper typing
-      const tradingAgent = orchestrator['tradingAgent'] as TradingAgent;
-      const tickerAgent = orchestrator['tickerAgent'] as TickerAgent;
-      const analysisAgent = orchestrator['analysisAgent'] as AnalysisAgent;
-      const newsAgent = orchestrator['newsAgent'] as NewsAgent;
+      // Setup agent-specific event handlers
+      orchestrator.on('tradeExecuted', addTradeExecution);
+      orchestrator.on('priceUpdate', updatePrice);
+      orchestrator.on('analysisComplete', addSignal);
+      orchestrator.on('newsSignal', addSignal);
 
-      tradingAgent.on('tradeExecuted', addTradeExecution);
-      tickerAgent.on('priceUpdate', (data: Candlestick) => updatePrice(data.symbol, data));
-      analysisAgent.on('analysisComplete', addSignal);
-      newsAgent.on('newsSignal', addSignal);
+      // Initial status update
+      updateAgentStatuses();
     };
 
-    // Setup initial state and listeners
-    updateAgentStatuses();
+    // Initialize event listeners
     setupEventListeners();
 
-    // Cleanup function
+    // Cleanup
     return () => {
-      orchestrator.removeAllListeners();
-      orchestrator['tradingAgent'].removeAllListeners();
-      orchestrator['tickerAgent'].removeAllListeners();
-      orchestrator['analysisAgent'].removeAllListeners();
-      orchestrator['newsAgent'].removeAllListeners();
+      if (orchestrator) {
+        orchestrator.removeAllListeners();
+      }
     };
-  }, [orchestrator, updateAgentStatuses, addTradeExecution, updatePrice, addSignal]);
+  }, [isClient, updateAgentStatuses, addTradeExecution, updatePrice, addSignal, setOrchestratorRunning]);
+
+  return {
+    isRunning: isOrchestratorRunning,
+    isInitialized: isClient
+  };
 } 

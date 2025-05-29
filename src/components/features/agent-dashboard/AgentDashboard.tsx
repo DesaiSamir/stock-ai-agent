@@ -1,6 +1,5 @@
 import React from 'react';
 import { Box } from '@mui/material';
-import { AgentOrchestrator } from '@/agents/AgentOrchestrator';
 import { useAgentMonitoringStore } from '@/store/agent-monitoring';
 import { useAgentOrchestrator } from '@/hooks/useAgentOrchestrator';
 import { StatusCard } from './StatusCard';
@@ -8,13 +7,9 @@ import { PriceCard } from './PriceCard';
 import { SignalsCard } from './SignalsCard';
 import { TradesCard } from './TradesCard';
 
-interface AgentDashboardProps {
-  orchestrator: AgentOrchestrator;
-}
-
-export const AgentDashboard: React.FC<AgentDashboardProps> = ({ orchestrator }) => {
+export const AgentDashboard: React.FC = () => {
   // Setup orchestrator listeners
-  useAgentOrchestrator(orchestrator);
+  useAgentOrchestrator();
 
   // Get state from store
   const {

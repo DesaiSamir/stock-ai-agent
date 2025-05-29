@@ -14,6 +14,7 @@ export interface AuthHeaders {
 
 class AuthService {
   private static instance: AuthService;
+  private currentToken: TokenInfo | null = null;
 
   private constructor() {}
 
@@ -53,6 +54,7 @@ class AuthService {
     }
 
     const tokenInfo: TokenInfo = await response.json();
+    this.currentToken = tokenInfo;
     return tokenInfo;
   }
 
@@ -84,7 +86,20 @@ class AuthService {
     }
 
     const tokenInfo: TokenInfo = await response.json();
+    this.currentToken = tokenInfo;
     return tokenInfo;
+  }
+
+  public setAccessToken(token: string): void {
+    this.currentToken = {
+      access_token: token,
+      expires_in: 0,
+      userid: ''
+    };
+  }
+
+  public getAccessToken(): string | null {
+    return this.currentToken?.access_token || null;
   }
 }
 

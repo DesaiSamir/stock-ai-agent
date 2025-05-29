@@ -80,7 +80,13 @@ export const SentimentAnalyzer: React.FC<SentimentAnalyzerProps> = ({ symbol }) 
   };
 
   return (
-    <Card>
+    <Card 
+      sx={{ 
+        height: '100%', 
+        display: 'flex', 
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }}>
       <CardContent>
         <Typography variant="h5" gutterBottom>
           Market Sentiment Analysis: {symbol}
@@ -155,7 +161,7 @@ export const SentimentAnalyzer: React.FC<SentimentAnalyzerProps> = ({ symbol }) 
         )}
 
         {sentiment && (
-          <Box sx={{ mt: 3 }}>
+          <Box sx={{ mt: 3, overflow: 'auto' }}>
             <Typography
               variant="h6"
               color={getSentimentColor(sentiment.overall)}

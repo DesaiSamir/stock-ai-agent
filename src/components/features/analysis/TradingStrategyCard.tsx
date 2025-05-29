@@ -13,6 +13,7 @@ import {
   Box,
 } from '@mui/material';
 import { ReactMarkdownRenderer } from '@/components/ui/markdown/ReactMarkdownRenderer';
+import { useMarketDataStore } from '@/store/market-data';
 
 interface TradingStrategyCardProps {
   symbol: string;
@@ -27,6 +28,7 @@ export const TradingStrategyCard: React.FC<TradingStrategyCardProps> = ({ symbol
   const [strategy, setStrategy] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { getBarData, getQuote } = useMarketDataStore();
 
   const handleTimeframeChange = (event: SelectChangeEvent) => {
     setTimeframe(event.target.value as TimeFrame);
@@ -49,6 +51,8 @@ export const TradingStrategyCard: React.FC<TradingStrategyCardProps> = ({ symbol
           symbol,
           timeframe,
           riskTolerance,
+          marketData: getBarData(symbol),
+          quoteData: getQuote(symbol),
         }),
       });
 

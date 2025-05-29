@@ -327,7 +327,7 @@ const FinancialChart = ({
         />
         <BarSeries fillStyle={volumeColor} yAccessor={volumeSeries} />
         <CurrentCoordinate
-          yAccessor={(d) => d.volume || 0}
+          yAccessor={(d) => d?.volume ?? 0}
           fillStyle="#9B0A47"
         />
         <EdgeIndicator

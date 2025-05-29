@@ -44,7 +44,7 @@ export async function GET(request: Request) {
 
     // For non-streaming, use the current quote endpoint
     const url = `/v2/data/quote/${symbols}`;
-    const quoteData = await tradestationService.get(url, headers);
+    const quoteData = await tradestationService.get(url);
     return Response.json(quoteData ?? []);
   } catch (error) {
     console.error("Failed to fetch quote:", error);

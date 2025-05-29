@@ -12,6 +12,7 @@ import axios from "axios";
 import { cookieUtils } from "@/utils/cookies";
 import { patternDetector } from "@/services/patternDetector";
 import { useMarketDataStore } from "@/store/market-data";
+import { ENDPOINTS, HTTP_METHODS } from "@/constants/http";
 
 export interface StreamPayload {
   symbol: string;
@@ -60,7 +61,7 @@ export const http = {
       new Date().toLocaleDateString() + " 9:00:00 PM",
     );
     const currentTime = new Date();
-    return true;
+    // return true;
     return (
       currentTime > sessionStartTime &&
       currentTime < sessionEndTime &&
@@ -74,13 +75,15 @@ export const http = {
     if (this.isQuoteFetching) return;
 
     try {
-      if (this.isRegularSessionTime()) {
-        this.isQuoteFetching = true;
-        const response = await this.get<QuoteData[]>(`/api/tradestation/quote?symbols=${encodeURIComponent(symbol)}`);
-        
-        if (Array.isArray(response) && response.length > 0) {
-          callback(response[0]);
-        }
+      this.isQuoteFetching = true;
+      const response = await this.post<QuoteData[]>(`${ENDPOINTS.MARKET_DATA}`, {
+        method: HTTP_METHODS.GET,
+        url: `${ENDPOINTS.QUOTE}/${symbol}`,
+      });
+
+      
+      if (Array.isArray(response) && response.length > 0) {
+        callback(response[0]);
       }
     } catch (error) {
       console.error("Failed to fetch quote data:", error);
@@ -106,11 +109,12 @@ export const http = {
         clearInterval(this.quoteTimer);
       }
 
-      // Setup polling every second
-      this.quoteTimer = setInterval(async () => {
-        await this.getQuoteData(symbol, callback);
-      }, API_CALL_TIMEOUT);
-
+      if (this.isRegularSessionTime()) {
+        // Setup polling every second
+        this.quoteTimer = setInterval(async () => {
+          await this.getQuoteData(symbol, callback);
+        }, API_CALL_TIMEOUT);
+      }
       // Return a resolved promise to indicate initial data is loaded
       return Promise.resolve();
     } catch (error) {
@@ -135,21 +139,20 @@ export const http = {
         try {
           this.isBarFetching = true;
 
-          if (this.isRegularSessionTime()) {
-            const barchartRequest = this.createBarchartRequest(
-              payload.symbol,
-              payload.interval,
-              payload.unit,
-              payload.isPreMarket,
-            );
+          const barchartRequest = this.createBarchartRequest(
+            payload.symbol,
+            payload.interval,
+            payload.unit,
+            payload.isPreMarket,
+          );
 
-            const url = `/v2/stream/barchart/${barchartRequest.symbol}/${barchartRequest.interval}/${barchartRequest.unit}/${barchartRequest.barsBack}/${barchartRequest.lastDate}${barchartRequest.sessionTemplate ? `?SessionTemplate=${barchartRequest.sessionTemplate}` : ""}`;
-
-            const data = await this.get<BarData[]>(`/api/tradestation/barchart?url=${encodeURIComponent(url)}`);
-
-            if (Array.isArray(data)) {
-              callback(this.formatBarDataArray(data));
-            }
+          const url = `${ENDPOINTS.BARCHART}/${barchartRequest.symbol}/${barchartRequest.interval}/${barchartRequest.unit}/${barchartRequest.barsBack}/${barchartRequest.lastDate}${barchartRequest.sessionTemplate ? `?SessionTemplate=${barchartRequest.sessionTemplate}` : ""}`;
+          const data = await this.post<BarData[]>(`${ENDPOINTS.MARKET_DATA}`, {
+            method: HTTP_METHODS.GET,
+            url: url,
+          });
+          if (Array.isArray(data)) {
+            callback(this.formatBarDataArray(data));
           }
         } catch (error) {
           console.error("Failed to fetch bar data:", error);
@@ -167,8 +170,10 @@ export const http = {
         clearInterval(this.barChartTimer);
       }
 
-      // Setup polling every second
-      this.barChartTimer = setInterval(fetchData, API_CALL_TIMEOUT);
+      if (this.isRegularSessionTime()) {
+        // Setup polling every second
+        this.barChartTimer = setInterval(fetchData, API_CALL_TIMEOUT);
+      }
 
       // Return a resolved promise to indicate initial data is loaded
       return Promise.resolve();
@@ -404,7 +409,7 @@ export const http = {
       }
 
       // For GET requests, append token to URL
-      const finalUrl = method.toUpperCase() === 'GET' 
+      const finalUrl = method.toUpperCase() === HTTP_METHODS.GET 
         ? `${url}${url.includes('?') ? '&' : '?'}token=${updatedStore.accessToken}`
         : url;
 
@@ -418,11 +423,14 @@ export const http = {
         url: finalUrl,
       };
 
-      if (method.toUpperCase() !== 'GET' && payload) {
-        config.data = payload;
+      if (method.toUpperCase() !== HTTP_METHODS.GET && payload) {
+        config.data = {
+          token: updatedStore.accessToken,
+          ...payload,
+        };
       }
 
-      if (method.toUpperCase() === 'GET' && payload) {
+      if (method.toUpperCase() === HTTP_METHODS.GET && payload) {
         config.params = payload;
       }
 
@@ -440,11 +448,11 @@ export const http = {
   },
 
   async get<T>(url: string): Promise<T> {
-    return this.send("GET", url);
+    return this.send(HTTP_METHODS.GET, url);
   },
 
   async post<T>(url: string, payload: unknown): Promise<T> {
-    return this.send("POST", url, payload);
+    return this.send(HTTP_METHODS.POST, url, payload);
   },
 
   createBarchartRequest(

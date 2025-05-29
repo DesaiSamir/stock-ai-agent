@@ -222,35 +222,50 @@ class NewsService {
     return pendingRequest;
   }
 
-  public async analyzeNews(news: NewsItem): Promise<NewsAnalysis | null> {
+  public async analyzeNews(news: NewsItem | NewsItem[]): Promise<NewsAnalysis | null> {
+    // If input is an array, treat as batch analysis and skip cache
+    if (Array.isArray(news)) {
+      try {
+        await this.waitForAIRateLimit();
+        const analysis = await aiService.analyzeNewsImpact(news, {
+          currentPrice: 0,
+          volume: 0,
+          previousClose: 0
+        });
+        return {
+          keyTopics: analysis.keyEvents,
+          marketImpact: `${analysis.predictedImpact.priceDirection} (${analysis.predictedImpact.magnitudePercent}%) ${analysis.predictedImpact.timeframe}`,
+          tradingSignals: [analysis.sentiment],
+          confidence: analysis.confidence
+        };
+      } catch (error) {
+        console.error('Error analyzing news:', error);
+        return null;
+      }
+    }
+    // Original NewsItem logic
     const cacheKey = news.url;
-    
     const cached = this.analysisCache.get(cacheKey);
     if (cached && this.isCacheValid(cached.timestamp)) {
       return cached.data;
     }
-
     try {
       await this.waitForAIRateLimit();
-
       const analysis = await aiService.analyzeNewsImpact([news], {
         currentPrice: 0,
         volume: 0,
         previousClose: 0
       });
-
       const newsAnalysis = {
         keyTopics: analysis.keyEvents,
         marketImpact: `${analysis.predictedImpact.priceDirection} (${analysis.predictedImpact.magnitudePercent}%) ${analysis.predictedImpact.timeframe}`,
         tradingSignals: [analysis.sentiment],
         confidence: analysis.confidence
       };
-
       this.analysisCache.set(cacheKey, {
         timestamp: Date.now(),
         data: newsAnalysis
       });
-
       return newsAnalysis;
     } catch (error) {
       console.error('Error analyzing news:', error);
@@ -273,19 +288,18 @@ class NewsService {
     });
 
     const allNews = Array.from(uniqueNews.values());
-    
     // Sort by date, newest first
     allNews.sort((a, b) => 
       new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
     );
 
-    // Get analysis for each news item
-    const analysisPromises = allNews.map(news => this.analyzeNews(news));
-    const analyses = await Promise.all(analysisPromises);
+    // Analyze top 10 news as a batch
+    const topNews = allNews.slice(0, 10);
+    const analysis = await this.analyzeNews(topNews);
 
     return {
       articles: allNews,
-      analyses: analyses.filter((a): a is NewsAnalysis => a !== null)
+      analyses: [analysis].filter((a): a is NewsAnalysis => a !== null)
     };
   }
 }

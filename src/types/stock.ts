@@ -33,7 +33,7 @@ export interface NewsItem {
 export interface AgentStatus {
   id: string;
   name: string;
-  status: "active" | "inactive" | "error";
+  status: "ACTIVE" | "INACTIVE" | "ERROR";
   lastUpdate: Date;
   message?: string;
 }

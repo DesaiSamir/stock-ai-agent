@@ -1,4 +1,4 @@
-import { AgentStatus, StockData, TradeSignal, TradeExecution } from './agent';
+import { AgentStatus, TradeSignal, TradeExecution } from './agent';
 import { Candlestick } from './candlestick';
 
 export interface Position {

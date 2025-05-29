@@ -33,23 +33,36 @@ export class NewsAgent extends EventEmitter {
     this.config.status = "ACTIVE";
     this.config.lastUpdated = new Date();
 
-    // Start the monitoring loop
-    this.monitoringInterval = setInterval(
-      () => {
-        this.monitorNews().catch(error => {
-          console.error("Error in news monitoring loop:", error);
-          this.config.status = "ERROR";
-          this.emit("error", error);
-        });
-      },
-      this.config.config.updateInterval,
-    );
+    // Clear any existing interval
+    if (this.monitoringInterval) {
+      clearInterval(this.monitoringInterval);
+      this.monitoringInterval = null;
+    }
 
     // Initial news check
     await this.monitorNews();
+
+    // Start the monitoring loop after initial check completes
+    this.monitoringInterval = setInterval(
+      () => {
+        // Only start new monitoring if not already monitoring
+        if (!this.config.config.symbols.some(symbol => 
+          useAgentMonitoringStore.getState().isSymbolBeingMonitored(symbol)
+        )) {
+          this.monitorNews().catch(error => {
+            console.error("Error in news monitoring loop:", error);
+            this.config.status = "ERROR";
+            this.emit("error", error);
+          });
+        }
+      },
+      this.config.config.updateInterval,
+    );
   }
 
   async stop(): Promise<void> {
+    console.log("Stopping News Agent...");
+    
     if (this.monitoringInterval) {
       clearInterval(this.monitoringInterval);
       this.monitoringInterval = null;

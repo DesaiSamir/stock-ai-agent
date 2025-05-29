@@ -11,6 +11,8 @@ import { useMarketDataStore } from "@/store/market-data";
 import { AnalysisDashboard } from "../features/analysis/AnalysisDashboard";
 import { AgentDashboard } from "@/components/features/agent-dashboard/AgentDashboard";
 import { AgentOrchestrator } from "@/agents/AgentOrchestrator";
+import { useAgentMonitoringStore } from "@/store/agent-monitoring";
+import type { AgentTabKey } from "@/constants/sidebar";
 
 interface StockDashboardProps {
   initialChartHeight?: number;
@@ -28,42 +30,59 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
 }) => {
   const [chartHeight, setChartHeight] = useState(initialChartHeight);
   const [isDragging, setIsDragging] = useState(false);
-  const [activeAgent, setActiveAgent] = useState<
-    "chart" | "dynamic-chart" | "news" | "trading" | "analysis" | "dashboard"
-  >("dynamic-chart");
-  const [orchestrator, setOrchestrator] = useState<AgentOrchestrator | null>(null);
+  const [activeAgent, setActiveAgent] = useState<AgentTabKey>("dynamic-chart");
 
   const { setCurrentSymbol, currentSymbol, barData } = useMarketDataStore();
+  const { setOrchestrator: setStoreOrchestrator, isOrchestratorRunning } = useAgentMonitoringStore();
 
   // Initialize orchestrator
   useEffect(() => {
-    const newOrchestrator = new AgentOrchestrator({
-      symbols: ['AAPL'],
-      updateInterval: 60000,
-      technicalIndicators: ['EMA', 'RSI', 'MACD', 'BB'],
-      fundamentalMetrics: ['PE', 'PB', 'ROE', 'DEBT_EQUITY'],
-      minConfidence: 0.7,
-      maxPositionSize: 100000,
-      riskLimit: 0.02,
-      newsSources: ['reuters', 'bloomberg', 'wsj'],
-      dataSource: 'alpha-vantage',
-    });
-    
-    // Make orchestrator globally available
-    window.orchestrator = newOrchestrator;
-    setOrchestrator(newOrchestrator);
+    let orchestratorInstance: AgentOrchestrator | null = null;
 
-    // Start the orchestrator
-    newOrchestrator.start();
+    // Only initialize if not already running
+    if (!isOrchestratorRunning) {
+      const newOrchestrator = new AgentOrchestrator({
+        symbols: ['AAPL'],
+        updateInterval: 60000, // 1 minute
+        technicalIndicators: ['EMA', 'RSI', 'MACD', 'BB'],
+        fundamentalMetrics: ['PE', 'PB', 'ROE', 'DEBT_EQUITY'],
+        minConfidence: 0.7,
+        maxPositionSize: 100000,
+        riskLimit: 0.02,
+        newsSources: ['reuters', 'bloomberg', 'wsj'],
+        dataSource: 'alpha-vantage',
+      });
+      
+      // Set up store interface
+      newOrchestrator.setStore({
+        isOrchestratorRunning,
+        setOrchestratorRunning: (running: boolean) => {
+          // Only update store if state actually changes and it's not from initialization
+          if (running !== isOrchestratorRunning) {
+            // Don't update orchestrator reference, just the running state
+            useAgentMonitoringStore.getState().setOrchestratorRunning(running);
+          }
+        }
+      });
+
+      // Make orchestrator globally available
+      window.orchestrator = newOrchestrator;
+      orchestratorInstance = newOrchestrator;
+
+      // Initialize store with orchestrator without changing running state
+      setStoreOrchestrator(newOrchestrator);
+    }
 
     return () => {
-      if (newOrchestrator) {
-        newOrchestrator.stop();
+      if (orchestratorInstance) {
+        orchestratorInstance.stop().catch(console.error);
         // Clean up global reference
-        delete window.orchestrator;
+        if (window.orchestrator === orchestratorInstance) {
+          delete window.orchestrator;
+        }
       }
     };
-  }, []);
+  }, [isOrchestratorRunning, setStoreOrchestrator]);
 
   // Set initial symbol if none is selected
   useEffect(() => {
@@ -106,8 +125,6 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
     if (!currentSymbol) return null;
 
     switch (activeAgent) {
-      case "chart":
-        return null; // <StockChart symbol={currentSymbol} />;
       case "dynamic-chart":
         return <DynamicStockChart symbol={currentSymbol} />;
       case "news":
@@ -116,10 +133,7 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
       case "analysis":
         return <AnalysisDashboard symbol={currentSymbol} marketData={barData[currentSymbol] || []} />;
       case "dashboard":
-        if (orchestrator) {
-          return <AgentDashboard orchestrator={orchestrator} />;
-        }
-        return null;
+        return <AgentDashboard />;
       default:
         return null;
     }
@@ -140,58 +154,48 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
         }}
         onMouseMove={handleMouseMove}
       >
-        {activeAgent === "dashboard" ? (
-          // Render AgentDashboard without the chart/divider layout
-          <Box sx={{ height: "100%", overflow: "auto" }}>
-            {orchestrator && <AgentDashboard orchestrator={orchestrator} />}
-          </Box>
-        ) : (
-          // Render normal chart/divider layout
-          <>
-            <Box
-              sx={{
-                height: `${chartHeight}%`,
-                minHeight: "20%",
-                maxHeight: "80%",
-                width: "100%",
-                position: "relative",
-                overflow: "hidden",
-              }}
-            >
-              {renderChartComponent()}
-            </Box>
+        <Box
+          sx={{
+            height: `${chartHeight}%`,
+            minHeight: "20%",
+            maxHeight: "80%",
+            width: "100%",
+            position: "relative",
+            overflow: "hidden",
+          }}
+        >
+          {renderChartComponent()}
+        </Box>
 
-            <Divider
-              onMouseDown={handleMouseDown}
-              sx={{
-                cursor: "row-resize",
-                height: "4px",
-                bgcolor: "divider",
-                "&:hover": {
-                  bgcolor: "primary.main",
-                  opacity: 0.7,
-                },
-                ...(isDragging && {
-                  bgcolor: "primary.main",
-                  opacity: 0.7,
-                }),
-              }}
-            />
+        <Divider
+          onMouseDown={handleMouseDown}
+          sx={{
+            cursor: "row-resize",
+            height: "4px",
+            bgcolor: "divider",
+            "&:hover": {
+              bgcolor: "primary.main",
+              opacity: 0.7,
+            },
+            ...(isDragging && {
+              bgcolor: "primary.main",
+              opacity: 0.7,
+            }),
+          }}
+        />
 
-            <Box
-              sx={{
-                flexGrow: 1,
-                overflow: "auto",
-                height: `${100 - chartHeight}%`,
-                minHeight: "20%",
-                maxHeight: "80%",
-                pb: 5,
-              }}
-            >
-              <AgentTabs />
-            </Box>
-          </>
-        )}
+        <Box
+          sx={{
+            flexGrow: 1,
+            overflow: "auto",
+            height: `${100 - chartHeight}%`,
+            minHeight: "20%",
+            maxHeight: "80%",
+            pb: 6,
+          }}
+        >
+          <AgentTabs />
+        </Box>
       </Box>
     </Box>
   );

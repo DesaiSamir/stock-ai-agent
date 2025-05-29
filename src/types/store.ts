@@ -17,6 +17,7 @@ export interface AgentMonitoringState {
   positions: Position[];
   orchestrator: AgentOrchestrator | null;
   monitoringState: Record<string, MonitoringStateEntry>;
+  isOrchestratorRunning: boolean;
 }
 
 export interface AgentMonitoringActions {
@@ -29,6 +30,7 @@ export interface AgentMonitoringActions {
   isSymbolBeingMonitored: (symbol: string) => boolean;
   setSymbolMonitoring: (symbol: string, isMonitoring: boolean) => void;
   getLastChecked: (symbol: string) => string | null;
+  setOrchestratorRunning: (running: boolean) => void;
 }
 
 export type AgentMonitoringStore = AgentMonitoringState & AgentMonitoringActions;

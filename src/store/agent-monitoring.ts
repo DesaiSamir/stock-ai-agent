@@ -5,10 +5,23 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { AgentOrchestrator } from '@/agents/AgentOrchestrator';
 import { TradeSignal, TradeExecution } from '@/types/agent';
 import { Candlestick } from '@/types/candlestick';
-import { AgentMonitoringStore } from '@/types/store';
+import { AgentMonitoringStore, AgentMonitoringState } from '@/types/store';
 import { AgentStatusDisplay } from '@/types/agent-dashboard';
 
-const INITIAL_STATE = {
+// Global orchestrator instance
+let orchestratorInstance: AgentOrchestrator | null = null;
+
+// Define the persisted state type
+type PersistedState = Pick<AgentMonitoringState, 
+  'latestPrices' | 
+  'latestSignals' | 
+  'recentTrades' | 
+  'positions' | 
+  'monitoringState' |
+  'isOrchestratorRunning'
+>;
+
+const INITIAL_STATE: AgentMonitoringState = {
   agentStatuses: {},
   latestPrices: {},
   latestSignals: [],
@@ -16,41 +29,69 @@ const INITIAL_STATE = {
   positions: [],
   orchestrator: null,
   monitoringState: {},
+  isOrchestratorRunning: false,
 };
 
-export const useAgentMonitoringStore = create(
-  persist<AgentMonitoringStore>(
+export const useAgentMonitoringStore = create<AgentMonitoringStore>()(
+  persist(
     (set, get) => ({
       ...INITIAL_STATE,
 
       setOrchestrator: (orchestrator: AgentOrchestrator) => {
-        set({ orchestrator });
+        // Initialize the orchestrator with store interface
+        orchestrator.setStore({
+          isOrchestratorRunning: get().isOrchestratorRunning,
+          setOrchestratorRunning: (running: boolean) => {
+            const current = get().isOrchestratorRunning;
+            if (current !== running) {
+              console.log(`Setting orchestrator running state: ${running}`);
+              set({ isOrchestratorRunning: running });
+            }
+          }
+        });
+        
+        orchestratorInstance = orchestrator;
+        set({ orchestrator }); // Don't reset running state when setting new orchestrator
+      },
+
+      setOrchestratorRunning: (running: boolean) => {
+        const current = get().isOrchestratorRunning;
+        if (current !== running) {
+          console.log(`Setting orchestrator running state: ${running}`);
+          set({ isOrchestratorRunning: running });
+        }
       },
 
       updateAgentStatuses: () => {
-        const { orchestrator } = get();
-        if (!orchestrator) return;
+        if (!orchestratorInstance) return;
 
-        const rawStatuses = orchestrator.getAgentStatuses();
-        console.log('Raw agent statuses:', rawStatuses);
-        
-        // Transform the raw statuses into the expected format
-        const statuses = Object.entries(rawStatuses).reduce((acc, [key, config]) => {
-          acc[key] = {
-            name: config.name,
-            status: config.status,
-            lastUpdated: config.lastUpdated
-          };
-          return acc;
-        }, {} as Record<string, AgentStatusDisplay>);
-        
-        console.log('Transformed agent statuses:', statuses);
-        const positions = orchestrator.getPositions();
-        
-        set({
-          agentStatuses: statuses,
-          positions: positions
-        });
+        try {
+          const rawStatuses = orchestratorInstance.getAgentStatuses();
+          console.log('Raw agent statuses:', rawStatuses);
+          
+          // Transform the raw statuses into the expected format
+          const statuses = Object.entries(rawStatuses).reduce((acc, [key, config]) => {
+            acc[key] = {
+              name: config.name,
+              status: config.status,
+              lastUpdated: config.lastUpdated
+            };
+            return acc;
+          }, {} as Record<string, AgentStatusDisplay>);
+          
+          console.log('Transformed agent statuses:', statuses);
+          const positions = orchestratorInstance.getPositions();
+          
+          // Only update if we have valid statuses
+          if (Object.keys(statuses).length > 0) {
+            set({
+              agentStatuses: statuses,
+              positions: positions
+            });
+          }
+        } catch (error) {
+          console.error('Error updating agent statuses:', error);
+        }
       },
 
       addTradeExecution: (trade: TradeExecution) => {
@@ -75,15 +116,31 @@ export const useAgentMonitoringStore = create(
         }));
       },
 
-      toggleAgents: () => {
-        const { orchestrator, agentStatuses } = get();
-        if (!orchestrator) return;
-
-        const isAnyActive = Object.values(agentStatuses).some(agent => agent.status === 'ACTIVE');
-        if (isAnyActive) {
-          orchestrator.stop();
-        } else {
-          orchestrator.start();
+      toggleAgents: async () => {
+        if (!orchestratorInstance) return;
+        
+        try {
+          const { isOrchestratorRunning } = get();
+          
+          if (isOrchestratorRunning) {
+            // First update local state to prevent multiple stops
+            set({ isOrchestratorRunning: false });
+            await orchestratorInstance.stop();
+          } else {
+            // First update local state to prevent multiple starts
+            set({ isOrchestratorRunning: true });
+            await orchestratorInstance.start();
+          }
+          
+          // Update statuses after a short delay to ensure agents have settled
+          setTimeout(() => {
+            get().updateAgentStatuses();
+          }, 500);
+        } catch (error) {
+          console.error('Error toggling agents:', error);
+          // Revert state on error
+          const { isOrchestratorRunning } = get();
+          set({ isOrchestratorRunning: !isOrchestratorRunning });
         }
       },
 
@@ -111,7 +168,15 @@ export const useAgentMonitoringStore = create(
     }),
     {
       name: 'agent-monitoring-store',
-      storage: createJSONStorage(() => localStorage)
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state): PersistedState => ({
+        latestPrices: state.latestPrices,
+        latestSignals: state.latestSignals,
+        recentTrades: state.recentTrades,
+        positions: state.positions,
+        monitoringState: state.monitoringState,
+        isOrchestratorRunning: state.isOrchestratorRunning,
+      }),
     }
   )
 ); 

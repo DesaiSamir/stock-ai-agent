@@ -1,3 +1,4 @@
+import { authService } from "./authService";
 import { tradestationConfig } from "./config";
 import axios from "axios";
 
@@ -124,14 +125,16 @@ class TradestationService {
     }
   }
 
-  async get(url: string, headers: Headers) {
+  async get(url: string) {
     try {
-      const response = await axios.get(tradestationConfig.baseUrlSim + url, {
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          Authorization: headers.get("Authorization"),
-        },
+      const headers = {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+        Authorization: "Bearer " + authService.getAccessToken(),
+      };
+      const apiUrl = tradestationConfig.baseUrlSim + url;
+      const response = await axios.get(apiUrl, {
+        headers,
       });
 
       // Parse the response if it's a string (streaming data)
@@ -177,13 +180,13 @@ class TradestationService {
       .filter((item): item is StreamData => item !== null);
   }
 
-  async post(url: string, data: unknown, headers: Headers) {
+  async post(url: string, data: unknown) {
     try {
       const response = await axios.post(url, data, {
         headers: {
           "Content-Type": "application/json",
-          Accept: "application/vnd.tradestation.streams+json",
-          Authorization: headers.get("Authorization"),
+          Accept: "application/json",
+          Authorization: "Bearer " + authService.getAccessToken(),
         },
       });
 

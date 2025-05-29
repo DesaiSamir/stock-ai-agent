@@ -5,6 +5,8 @@ interface TradingStrategyRequest {
   symbol: string;
   timeframe: string;
   riskTolerance: 'low' | 'medium' | 'high';
+  marketData: [];
+  quoteData: [];
 }
 
 export async function POST(request: NextRequest) {
@@ -21,7 +23,9 @@ export async function POST(request: NextRequest) {
     const strategy = await aiService.generateTradingStrategy(
       body.symbol,
       body.timeframe,
-      body.riskTolerance
+      body.riskTolerance,
+      body.marketData,
+      body.quoteData
     );
 
     return NextResponse.json({ strategy });

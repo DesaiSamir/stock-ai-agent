@@ -22,11 +22,11 @@ export const AgentStatusCard: React.FC<AgentStatusCardProps> = ({ status }) => {
   };
 
   return (
-    <Card title={status.name} subheader={status.type}>
+    <Card title={status.name}>
       <Alert severity={getSeverity()}>
         Status: {status.status}
         <br />
-        Last Updated: {status.lastUpdated.toLocaleString()}
+        Last Updated: {status.lastUpdate.toLocaleString()}
       </Alert>
     </Card>
   );

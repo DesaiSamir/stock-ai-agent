@@ -70,11 +70,20 @@ export class AnalysisAgent extends EventEmitter {
 
       return {
         symbol,
-        action: mockAction,
+        action: mockAction as "BUY" | "SELL",
         price: mockPrice,
         confidence: mockConfidence,
-        timestamp: new Date().toISOString(),
-        reason: `Analysis based on ${this.config.config.technicalIndicators.length} technical indicators and ${this.config.config.fundamentalMetrics.length} fundamental metrics`,
+        timestamp: new Date(),
+        source: "ANALYSIS",
+        analysis: {
+          sentiment: mockConfidence > 0.6 ? "bullish" : mockConfidence < 0.4 ? "bearish" : "neutral",
+          keyEvents: [],
+          reasoning: `Analysis based on ${this.config.config.technicalIndicators.length} technical indicators and ${this.config.config.fundamentalMetrics.length} fundamental metrics`,
+          predictedImpact: {
+            magnitude: mockConfidence,
+            timeframe: "short-term",
+          },
+        },
       };
     } catch (error) {
       console.error(`Error analyzing ${symbol}:`, error);

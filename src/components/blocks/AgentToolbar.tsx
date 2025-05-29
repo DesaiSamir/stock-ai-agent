@@ -5,19 +5,17 @@ import { Box, Typography, Tooltip } from "@mui/material";
 import {
   TrendingUp,
   Article,
-  ShowChart,
   Analytics,
   Menu,
   ChevronLeft,
   BarChart,
   Dashboard,
 } from "@mui/icons-material";
+import type { AgentTabKey } from "@/constants/sidebar";
 
 interface AgentToolbarProps {
-  onSelectAgent?: (
-    agent: "chart" | "dynamic-chart" | "news" | "trading" | "analysis" | "dashboard",
-  ) => void;
-  activeAgent?: "chart" | "dynamic-chart" | "news" | "trading" | "analysis" | "dashboard";
+  onSelectAgent?: (agent: AgentTabKey) => void;
+  activeAgent?: AgentTabKey;
 }
 
 interface ToolbarItemProps {
@@ -103,13 +101,6 @@ export const AgentToolbar: React.FC<AgentToolbarProps> = ({
           label="Agent Dashboard"
           onClick={() => onSelectAgent?.("dashboard")}
           isActive={activeAgent === "dashboard"}
-          isExpanded={isExpanded}
-        />
-        <ToolbarItem
-          icon={<ShowChart />}
-          label="Chart View"
-          onClick={() => onSelectAgent?.("chart")}
-          isActive={activeAgent === "chart"}
           isExpanded={isExpanded}
         />
         <ToolbarItem

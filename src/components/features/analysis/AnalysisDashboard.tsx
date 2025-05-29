@@ -16,41 +16,69 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
 }) => {
   return (
     <Container 
-      maxWidth="xl" 
-      sx={{ 
+      maxWidth={false}
+      
+      sx={{
+        width: '100%',
         height: '100%',
+        maxHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden',
-        py: 2
+        overflowY: 'auto',
+        py: 2,
+        minHeight: 0,
       }}
     >
-      <Box sx={{ 
-        display: 'flex', 
-        flexWrap: 'wrap', 
-        gap: 2,
-        height: '100%',
-        overflow: 'hidden'
-      }}>
-        <Box sx={{ 
-          width: { xs: '100%', lg: '50%' },
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: { xs: 'column', md: 'row' },
+          gap: 2,
           height: '100%',
-          minHeight: 0 // This is crucial for flex child to respect parent height
-        }}>
+          minHeight: 0,
+        }}
+      >
+        <Box
+          sx={{
+            flex: { md: '2 1 0%' },
+            width: { xs: '100%', md: 'auto' },
+            minWidth: 0,
+            minHeight: 0,
+            height: { xs: 'auto', md: '100%' },
+            mb: { xs: 2, md: 0 },
+            // On mobile, limit max height and allow scroll for this card
+            maxHeight: { xs: '60vh', md: 'none' },
+            overflowY: { xs: 'auto', md: 'visible' },
+          }}
+        >
           <MarketAnalysisPanel symbol={symbol} marketData={marketData} />
         </Box>
 
-        <Box sx={{ 
-          width: { xs: '100%', md: '47%', lg: '23%' },
-          height: { xs: 'auto', lg: '100%' }
-        }}>
+        <Box
+          sx={{
+            flex: { md: '1 1 0%' },
+            width: { xs: '100%', md: 'auto' },
+            minWidth: 0,
+            minHeight: 0,
+            height: { xs: 'auto', md: '100%' },
+            mb: { xs: 2, md: 0 },
+            maxHeight: { xs: '60vh', md: 'none' },
+            overflowY: { xs: 'auto', md: 'visible' },
+          }}
+        >
           <TradingStrategyCard symbol={symbol} />
         </Box>
 
-        <Box sx={{ 
-          width: { xs: '100%', md: '47%', lg: '23%' },
-          height: { xs: 'auto', lg: '100%' }
-        }}>
+        <Box
+          sx={{
+            flex: { md: '1 1 0%' },
+            width: { xs: '100%', md: 'auto' },
+            minWidth: 0,
+            minHeight: 0,
+            height: { xs: 'auto', md: '100%' },
+            mb: { xs: 2, md: 0 },
+          }}
+        >
           <SentimentAnalyzer symbol={symbol} />
         </Box>
       </Box>
