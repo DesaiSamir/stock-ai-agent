@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import type { TimeInterval } from "../../types/stock";
+import React, { useState, useRef, useEffect } from "react";
 import { TimeIntervalSelector } from "../core/TimeIntervalSelector";
 import { StockStats } from "../charts/stock-stats";
 import { Box } from "@mui/material";
@@ -17,7 +16,6 @@ interface DynamicStockChartProps {
 export const DynamicStockChart: React.FC<DynamicStockChartProps> = ({
   symbol,
 }) => {
-  const [interval, setInterval] = useState<TimeInterval>("1m");
   const [mounted, setMounted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -28,16 +26,9 @@ export const DynamicStockChart: React.FC<DynamicStockChartProps> = ({
   }, []);
 
   // Setup data fetching
-  const { isLoading, error } = useStockData({
-    symbol,
-    interval,
-  });
+  const { isLoading, error } = useStockData({});
 
   const { getBarData } = useMarketDataStore();
-
-  const handleIntervalChange = useCallback((newInterval: TimeInterval) => {
-    setInterval(newInterval);
-  }, []);
 
   // Return loading state only after mounting to avoid hydration mismatch
   if (!mounted || typeof window === "undefined") {
@@ -76,7 +67,6 @@ export const DynamicStockChart: React.FC<DynamicStockChartProps> = ({
       </Box>
     );
   }
-
   const chartData: Candlestick[] = getBarData(symbol) || [];
 
   return (
@@ -114,7 +104,8 @@ export const DynamicStockChart: React.FC<DynamicStockChartProps> = ({
         )}
       </Box>
 
-      <TimeIntervalSelector value={interval} onChange={handleIntervalChange} />
+      <TimeIntervalSelector />
     </Box>
   );
 };
+

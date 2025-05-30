@@ -3,12 +3,21 @@
 import { create } from "zustand";
 import type { QuoteData } from "@/types/tradestation";
 import { Candlestick } from "@/types/candlestick";
+import { TimeInterval } from "@/types/stock";
+import { TimeUnit } from "@/types/tradestation";
+
+interface IntervalType {
+  interval: TimeInterval;
+  unit: TimeUnit;
+  value: number; // value in minutes
+}
 
 interface StoredMarketData {
   barData: Record<string, Candlestick[]>;
   quotes: Record<string, QuoteData>;
   lastUpdated: Record<string, number>; // Timestamp of last update for each symbol
-  currentSymbol: string | null;
+  currentSymbol: string;
+  currentInterval: IntervalType;
 }
 
 const STORAGE_KEY = "market-data";
@@ -18,7 +27,12 @@ const defaultState: StoredMarketData = {
   barData: {},
   quotes: {},
   lastUpdated: {},
-  currentSymbol: null,
+  currentSymbol: "",
+  currentInterval: {
+    interval: "1m",
+    unit: "Minute",
+    value: 1
+  },
 };
 
 // Helper function to save state to localStorage
@@ -87,8 +101,10 @@ interface MarketDataState extends StoredMarketData {
   getBarData: (symbol: string) => Candlestick[] | null;
   getQuote: (symbol: string) => QuoteData | null;
   isDataFresh: (symbol: string) => boolean;
-  setCurrentSymbol: (symbol: string | null) => void;
-  getCurrentSymbol: () => string | null;
+  setCurrentSymbol: (symbol: string) => void;
+  getCurrentSymbol: () => string;
+  setCurrentInterval: (interval: TimeInterval) => void;
+  getCurrentInterval: () => IntervalType;
   dataExpiryTime: number;
   loadFromStorage: () => void;
   saveToStorage: () => void;
@@ -100,6 +116,7 @@ export const useMarketDataStore = create<MarketDataState>((set, get) => ({
   quotes: initialState.quotes,
   lastUpdated: initialState.lastUpdated,
   currentSymbol: initialState.currentSymbol,
+  currentInterval: initialState.currentInterval,
   dataExpiryTime: DATA_EXPIRY_TIME,
 
   updateBarData: (symbol: string, data: Candlestick[]) => {
@@ -171,8 +188,7 @@ export const useMarketDataStore = create<MarketDataState>((set, get) => ({
         barData: newBarData,
         quotes: newQuotes,
         lastUpdated: newLastUpdated,
-        currentSymbol:
-          state.currentSymbol === symbol ? null : state.currentSymbol,
+        currentSymbol: state.currentSymbol,
       };
 
       saveToStorage(newState);
@@ -214,7 +230,7 @@ export const useMarketDataStore = create<MarketDataState>((set, get) => ({
     return hasData && age < maxAge;
   },
 
-  setCurrentSymbol: (symbol: string | null) => {
+  setCurrentSymbol: (symbol: string) => {
     set(() => {
       const newState = { currentSymbol: symbol };
       saveToStorage(newState);
@@ -223,6 +239,32 @@ export const useMarketDataStore = create<MarketDataState>((set, get) => ({
   },
 
   getCurrentSymbol: () => get().currentSymbol,
+
+  setCurrentInterval: (interval: TimeInterval) => {
+    const unit: TimeUnit = interval.endsWith("m") || interval.endsWith("h") ? "Minute" :
+                interval.endsWith("d") ? "Daily" :
+                interval.endsWith("w") ? "Weekly" :
+                interval.endsWith("M") ? "Monthly" : "Minute";
+
+    // Calculate value in minutes
+    const value = parseInt(interval);
+    const parsedValue = interval.endsWith("h") ? value * 60 : value;
+
+    set((state) => {
+      const newState = {
+        ...state,
+        currentInterval: {
+          interval,
+          unit,
+          value: parsedValue
+        }
+      };
+      saveToStorage({ currentInterval: newState.currentInterval });
+      return newState;
+    });
+  },
+
+  getCurrentInterval: () => get().currentInterval,
 
   loadFromStorage: () => {
     try {
@@ -242,6 +284,7 @@ export const useMarketDataStore = create<MarketDataState>((set, get) => ({
       quotes: state.quotes,
       lastUpdated: state.lastUpdated,
       currentSymbol: state.currentSymbol,
+      currentInterval: state.currentInterval,
     });
   },
 }));

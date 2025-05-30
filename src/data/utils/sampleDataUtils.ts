@@ -2,6 +2,7 @@ import { Candlestick } from "@/types/candlestick";
 import { TimeInterval } from "../../types/stock";
 import { QuoteData } from "../../types/tradestation";
 import { generateStockData, CandlestickData } from "./generateStockData";
+import { useMarketDataStore } from "@/store/market-data";
 
 const INTERVAL_TO_MS: Record<TimeInterval, number> = {
   "1m": 60000,
@@ -93,13 +94,8 @@ export function generateSampleQuote(symbol: string): QuoteData {
  * @param interval The time interval
  * @returns An array of StockData with realistic sample values
  */
-export function generateSampleBarData(
-  symbol: string,
-  interval: string,
-): Candlestick[] {
+export function generateSampleBarData(): Candlestick[] {
   const sampleData = generateStockData({
-    symbol,
-    interval: interval as TimeInterval,
     basePrice: 100,
     volatility: 0.02,
     points: 100,
@@ -107,28 +103,24 @@ export function generateSampleBarData(
 
   return sampleData.map((data) => ({
     ...data,
-    symbol,
     price: data.close ?? data.open ?? 0,
   }));
 }
 
 export function updateSampleBarData(
   currentData: Candlestick[],
-  symbol: string,
-  interval: TimeInterval,
 ): Candlestick[] {
+  const { currentInterval } = useMarketDataStore.getState();
   const lastBar = currentData[currentData.length - 1];
   const now = new Date();
   const volatility = 0.001; // Reduced volatility for smoother intra-candle updates
 
   if (
     !lastBar ||
-    new Date(lastBar.date).getTime() + INTERVAL_TO_MS[interval] <= now.getTime()
+    new Date(lastBar.date).getTime() + INTERVAL_TO_MS[currentInterval.interval as TimeInterval] <= now.getTime()
   ) {
     // Time for a new bar
     const newBar = generateStockData({
-      symbol,
-      interval,
       basePrice: lastBar?.close ?? 100,
       volatility: 0.02, // Keep original volatility for new bars
       points: 1,

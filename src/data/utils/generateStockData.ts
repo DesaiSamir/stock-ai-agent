@@ -1,9 +1,8 @@
 import { Candlestick } from "@/types/candlestick";
 import { TimeInterval } from "../../types/stock";
+import { useMarketDataStore } from "@/store/market-data";
 
 interface GenerateStockDataOptions {
-  symbol: string;
-  interval: TimeInterval;
   basePrice?: number;
   volatility?: number;
   points?: number;
@@ -35,13 +34,13 @@ export interface CandlestickData {
  * @returns Array of StockData sorted by timestamp (newest first)
  */
 export function generateStockData({
-  interval = "1m",
   basePrice = 100,
   volatility = 0.02,
   points = 100,
 }: GenerateStockDataOptions): Candlestick[] {
   const data: Candlestick[] = [];
-  const minutesPerInterval = INTERVAL_TO_MINUTES[interval];
+  const { currentInterval } = useMarketDataStore.getState();
+  const minutesPerInterval = INTERVAL_TO_MINUTES[currentInterval.interval as TimeInterval];
   const now = new Date();
   let currentPrice = basePrice;
 

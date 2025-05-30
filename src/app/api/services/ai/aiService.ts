@@ -16,7 +16,10 @@ export interface ChatMessage {
 
 export interface AIAnalysisRequest {
   messages: ChatMessage[];
-  marketData?: unknown; // Replace with your specific market data type
+  bars?: unknown; // Replace with your specific market data type
+  quoteData?: unknown;
+  newsAnalysis?: unknown;
+  symbol?: string;
   temperature?: number;
   maxTokens?: number;
 }
@@ -116,15 +119,14 @@ class AIService {
         role: "system",
         content: MARKET_ANALYSIS_PROMPT,
       },
-      ...request.messages,
+      {
+        role: 'user',
+        content: `Analyze the current market conditions for ${request.symbol} based on the provided data:
+        QuoteData: ${JSON.stringify(request.quoteData)}
+        MarketData: ${JSON.stringify(request.bars)}
+        NewsAnalysis: ${JSON.stringify(request.newsAnalysis)}`,
+      },
     ];
-
-    if (request.marketData) {
-      messages.push({
-        role: "user",
-        content: `Here is the current market data for analysis: ${JSON.stringify(request.marketData)}`,
-      });
-    }
 
     const analysisText = await this.makeOpenAIRequest(messages, {
       temperature: request.temperature,

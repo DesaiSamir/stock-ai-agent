@@ -3,16 +3,35 @@ import { Card, CardContent, Typography, Button, CircularProgress, Box } from '@m
 import { AIAnalysisResponse } from '../../../app/api/services/ai/aiService';
 import { Candlestick } from '@/types/candlestick';
 import { ReactMarkdownRenderer } from '@/components/ui/markdown/ReactMarkdownRenderer';
+import { useMarketDataStore } from '@/store/market-data';
+import { useNewsStore } from '@/store/news-store';
 
 interface MarketAnalysisPanelProps {
   symbol: string;
   marketData: Candlestick[];
 }
 
-export const MarketAnalysisPanel: React.FC<MarketAnalysisPanelProps> = ({ symbol, marketData }) => {
+export const MarketAnalysisPanel: React.FC<MarketAnalysisPanelProps> = () => {
   const [analysis, setAnalysis] = useState<AIAnalysisResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const symbol = useMarketDataStore(state => state.currentSymbol);
+  const marketData = useMarketDataStore(state => state.barData[symbol || ''] || []);
+  const marketDataPayload = marketData.slice(-10) || [];
+  const quoteData = useMarketDataStore(state => state.quotes[symbol || '']);
+  
+  // Get news analysis for the current symbol
+  const newsData = useNewsStore(state => state.newsData.find(n => n.symbol === symbol));
+  const newsAnalysis = newsData?.analysis || [];
+
+  // Combine into a single payload
+  const analysisPayload = {
+    symbol,
+    quoteData,
+    bars: marketDataPayload,
+    newsAnalysis,
+  };
 
   const requestAnalysis = async () => {
     setLoading(true);
@@ -23,15 +42,7 @@ export const MarketAnalysisPanel: React.FC<MarketAnalysisPanelProps> = ({ symbol
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          messages: [
-            {
-              role: 'user',
-              content: `Analyze the current market conditions for ${symbol} based on the provided data.`,
-            },
-          ],
-          marketData,
-        }),
+        body: JSON.stringify(analysisPayload),
       });
 
       if (!response.ok) {

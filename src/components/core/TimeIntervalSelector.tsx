@@ -1,6 +1,7 @@
 import React from "react";
 import { ToggleButton, ToggleButtonGroup } from "@mui/material";
-import type { TimeInterval } from "../../types/stock";
+import type { TimeInterval } from "@/types/stock";
+import { useMarketDataStore } from "@/store/market-data";
 
 const intervals: TimeInterval[] = [
   "1m",
@@ -14,21 +15,16 @@ const intervals: TimeInterval[] = [
   "1M",
 ];
 
-interface TimeIntervalSelectorProps {
-  value?: TimeInterval;
-  onChange?: (interval: TimeInterval) => void;
-}
-
-export const TimeIntervalSelector: React.FC<TimeIntervalSelectorProps> = ({
-  value = "1m",
-  onChange,
-}) => {
+export const TimeIntervalSelector: React.FC = () => {
+  const { currentInterval, setCurrentInterval } = useMarketDataStore();
   return (
     <div className="h-8 flex items-center px-2 border-t border-gray-800">
       <ToggleButtonGroup
-        value={value}
+        value={currentInterval.interval}
         exclusive
-        onChange={(_, newValue) => onChange?.(newValue)}
+        onChange={(_, newValue) => {
+          if (newValue !== null) setCurrentInterval(newValue);
+        }}
         size="small"
         sx={{
           "& .MuiToggleButton-root": {

@@ -6,7 +6,7 @@ import { useNewsStore } from "@/store/news-store";
 
 interface NewsAPIResponse {
   articles: Array<NewsItem>;
-  analyses: Array<{
+  analysis: Array<{
     keyTopics: string[];
     marketImpact: string;
     tradingSignals: string[];
@@ -102,7 +102,7 @@ export class NewsAgent extends EventEmitter {
               ...article,
               id: `${symbol}-${article.publishedAt}-${article.url}` // Generate unique id
             })),
-            response.data.analyses
+            response.data.analysis
           );
 
           // Generate trade signal if significant analysis exists
@@ -132,12 +132,12 @@ export class NewsAgent extends EventEmitter {
         article => article.publishedAt > twentyFourHoursAgo
       );
 
-      if (recentArticles.length === 0 || !data.analyses) {
+      if (recentArticles.length === 0 || !data.analysis) {
         return null;
       }
 
       // Find the most significant analysis (highest confidence non-stable signal)
-      const significantAnalyses = data.analyses
+      const significantAnalyses = data.analysis
         .filter(analysis => {
           const impactMatch = analysis.marketImpact.match(/(up|down|stable)\s*\((\d+(?:\.\d+)?)%\)\s*(immediate|short-term|long-term)/i);
           return impactMatch && impactMatch[1].toLowerCase() !== 'stable' && analysis.confidence >= 0.7;

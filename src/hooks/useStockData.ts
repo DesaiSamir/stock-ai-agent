@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useMarketDataStore } from "@/store/market-data";
-import { TimeInterval } from "@/types/stock";
 import {
   generateSampleBarData,
   generateSampleQuote,
@@ -15,15 +14,11 @@ import { useSessionStore } from "@/store/session";
 import { Candlestick } from "@/types/candlestick";
 
 interface UseStockDataOptions {
-  symbol: string;
-  interval: TimeInterval;
   isPreMarket?: boolean;
   useSampleData?: boolean;
 }
 
 export function useStockData({
-  symbol,
-  interval = "1m",
   isPreMarket = false,
   useSampleData = false,
 }: UseStockDataOptions) {
@@ -31,21 +26,22 @@ export function useStockData({
   const [error, setError] = useState<string | null>(null);
   const { updateBarData, updateQuote } = useMarketDataStore();
   const { isConnected } = useSessionStore();
+  const { currentInterval, currentSymbol } = useMarketDataStore();
 
   // Barchart data effect
   useEffect(() => {
     if (!isConnected || useSampleData) {
       // Generate sample data when not connected or when useSampleData is true
-      const formattedData = generateSampleBarData(symbol, interval);
-      updateBarData(symbol, formattedData);
+      const formattedData = generateSampleBarData();
+      updateBarData(currentSymbol, formattedData);
       setIsLoading(false);
 
       // Set up interval for updates
       const updateInterval = setInterval(() => {
         const store = useMarketDataStore.getState();
-        const currentData = store.getBarData(symbol) || [];
-        const updatedData = updateSampleBarData(currentData, symbol, interval);
-        updateBarData(symbol, updatedData);
+        const currentData = store.getBarData(currentSymbol) || [];
+        const updatedData = updateSampleBarData(currentData);
+        updateBarData(currentSymbol, updatedData);
       }, 1000); // Update every second for smoother updates
 
       return () => clearInterval(updateInterval);
@@ -54,20 +50,16 @@ export function useStockData({
     setIsLoading(true);
     setError(null);
 
-    // Convert interval to TradeStation format
-    const unit = interval.endsWith("m") ? "Minute" : "Daily";
-    const intervalValue = parseInt(interval);
-
     const payload: StreamPayload = {
-      symbol,
-      interval: intervalValue,
-      unit,
+      symbol: currentSymbol,
+      interval: currentInterval.value || 1,
+      unit: currentInterval.unit || "Minute",
       isPreMarket,
     };
 
     // Handler for barchart data
     const handleBarData = (barData: Candlestick[]) => {
-      updateBarData(symbol, barData);
+      updateBarData(currentSymbol, barData);
       setIsLoading(false);
     };
 
@@ -97,20 +89,21 @@ export function useStockData({
       http.clearBarChartInterval();
     };
   }, [
-    symbol,
-    interval,
+    currentSymbol,
+    currentInterval.interval,
     isPreMarket,
     isConnected,
     updateBarData,
     useSampleData,
+    currentInterval,
   ]);
 
   // Quote data polling
   useEffect(() => {
     if (!isConnected || useSampleData) {
       // Generate sample quote data
-      const sampleQuote = generateSampleQuote(symbol);
-      updateQuote(symbol, sampleQuote);
+      const sampleQuote = generateSampleQuote(currentSymbol);
+      updateQuote(currentSymbol, sampleQuote);
       return;
     }
 
@@ -119,14 +112,14 @@ export function useStockData({
     const handleQuoteData = (quoteData: QuoteData) => {
       if (!quoteData) return;
       
-      updateQuote(symbol, quoteData);
+      updateQuote(currentSymbol, quoteData);
     };
 
     let mounted = true;
 
     // Start quote polling
     http
-      .getQuoteDataRecursive(symbol, handleQuoteData)
+      .getQuoteDataRecursive(currentSymbol, handleQuoteData)
       .then(() => {
         if (mounted) {
           setError(null);
@@ -148,7 +141,7 @@ export function useStockData({
       mounted = false;
       http.clearQuoteInterval();
     };
-  }, [symbol, isConnected, updateQuote, useSampleData]);
+  }, [currentSymbol, isConnected, updateQuote, useSampleData]);
 
   return {
     isLoading,

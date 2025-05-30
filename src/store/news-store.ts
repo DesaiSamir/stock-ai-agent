@@ -22,7 +22,7 @@ export interface NewsAnalysis {
 export interface SymbolNewsData {
   symbol: string;
   articles: NewsArticle[];
-  analyses: NewsAnalysis[];
+  analysis: NewsAnalysis[];
   lastUpdated: string;
 }
 
@@ -31,7 +31,7 @@ interface NewsStore {
   newsData: SymbolNewsData[];
   
   // Actions
-  addNewsData: (symbol: string, articles: NewsArticle[], analyses: NewsAnalysis[]) => void;
+  addNewsData: (symbol: string, articles: NewsArticle[], analysis: NewsAnalysis[]) => void;
   getNewsData: (symbol: string) => SymbolNewsData | null;
   clearNewsData: (symbol: string) => void;
   clearAllNewsData: () => void;
@@ -46,7 +46,7 @@ export const useNewsStore = create(
     (set, get) => ({
       ...INITIAL_STATE,
 
-      addNewsData: (symbol: string, articles: NewsArticle[], analyses: NewsAnalysis[]) => {
+      addNewsData: (symbol: string, articles: NewsArticle[], analysis: NewsAnalysis[]) => {
         set(state => {
           const newsData = [...state.newsData];
           const existingIndex = newsData.findIndex(data => data.symbol === symbol);
@@ -54,7 +54,7 @@ export const useNewsStore = create(
           const updatedData = {
             symbol,
             articles,
-            analyses,
+            analysis,
             lastUpdated: new Date().toISOString()
           };
 

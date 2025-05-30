@@ -299,7 +299,7 @@ class NewsService {
 
     return {
       articles: allNews,
-      analyses: [analysis].filter((a): a is NewsAnalysis => a !== null)
+      analysis: [analysis].filter((a): a is NewsAnalysis => a !== null)
     };
   }
 }

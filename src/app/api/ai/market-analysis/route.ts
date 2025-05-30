@@ -5,13 +5,6 @@ import { AIAnalysisRequest } from '../../services/ai/aiService';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json() as AIAnalysisRequest;
-    
-    if (!body.messages || !Array.isArray(body.messages)) {
-      return NextResponse.json(
-        { error: 'Invalid request: messages array is required' },
-        { status: 400 }
-      );
-    }
 
     const analysis = await aiService.analyzeMarket(body);
     return NextResponse.json(analysis);
