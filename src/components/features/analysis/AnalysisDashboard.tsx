@@ -2,7 +2,6 @@ import React from 'react';
 import { Container, Box } from '@mui/material';
 import { MarketAnalysisPanel } from './MarketAnalysisPanel';
 import { TradingStrategyCard } from './TradingStrategyCard';
-import { SentimentAnalyzer } from './SentimentAnalyzer';
 import { Candlestick } from '@/types/candlestick';
 
 interface AnalysisDashboardProps {
@@ -15,9 +14,8 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
   marketData,
 }) => {
   return (
-    <Container 
-      maxWidth={false}
-      
+    <Container
+      maxWidth="lg"
       sx={{
         width: '100%',
         height: '100%',
@@ -25,7 +23,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
         display: 'flex',
         flexDirection: 'column',
         overflowY: 'auto',
-        py: 2,
+        py: 1,
         minHeight: 0,
       }}
     >
@@ -33,20 +31,19 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
         sx={{
           display: 'flex',
           flexDirection: { xs: 'column', md: 'row' },
-          gap: 2,
+          gap: 1,
           height: '100%',
           minHeight: 0,
         }}
       >
         <Box
           sx={{
-            flex: { md: '2 1 0%' },
-            width: { xs: '100%', md: 'auto' },
+            flex: 1,
+            width: { xs: '100%', md: '50%' },
             minWidth: 0,
             minHeight: 0,
             height: { xs: 'auto', md: '100%' },
             mb: { xs: 2, md: 0 },
-            // On mobile, limit max height and allow scroll for this card
             maxHeight: { xs: '60vh', md: 'none' },
             overflowY: { xs: 'auto', md: 'visible' },
           }}
@@ -56,8 +53,8 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
 
         <Box
           sx={{
-            flex: { md: '1 1 0%' },
-            width: { xs: '100%', md: 'auto' },
+            flex: 1,
+            width: { xs: '100%', md: '50%' },
             minWidth: 0,
             minHeight: 0,
             height: { xs: 'auto', md: '100%' },
@@ -67,19 +64,6 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
           }}
         >
           <TradingStrategyCard symbol={symbol} />
-        </Box>
-
-        <Box
-          sx={{
-            flex: { md: '1 1 0%' },
-            width: { xs: '100%', md: 'auto' },
-            minWidth: 0,
-            minHeight: 0,
-            height: { xs: 'auto', md: '100%' },
-            mb: { xs: 2, md: 0 },
-          }}
-        >
-          <SentimentAnalyzer symbol={symbol} />
         </Box>
       </Box>
     </Container>

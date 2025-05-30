@@ -5,10 +5,12 @@ import type {
   StockData, 
   AgentConfig 
 } from "../../types/agent";
+import { useMarketDataStore } from '@/store/market-data';
 
 export class AnalysisAgent extends EventEmitter {
   private config: AnalysisAgentConfig;
   private monitoringInterval: NodeJS.Timeout | null = null;
+  private lastAnalysisTime: number = 0;
 
   constructor(config: AnalysisAgentConfig) {
     super();
@@ -21,13 +23,18 @@ export class AnalysisAgent extends EventEmitter {
     this.config.lastUpdated = new Date();
 
     // Start the monitoring loop
+    if (this.monitoringInterval) {
+      clearInterval(this.monitoringInterval);
+      this.monitoringInterval = null;
+    }
+
+    // Initial analysis (always run once on start)
+    await this.analyzeStocks();
+
     this.monitoringInterval = setInterval(
       () => this.analyzeStocks(),
       this.config.config.updateInterval,
     );
-
-    // Initial analysis
-    await this.analyzeStocks();
   }
 
   async stop(): Promise<void> {
@@ -39,6 +46,12 @@ export class AnalysisAgent extends EventEmitter {
   }
 
   private async analyzeStocks(): Promise<void> {
+    const now = Date.now();
+    // Only skip if this is not the first call and called too soon
+    if (this.lastAnalysisTime && now - this.lastAnalysisTime < this.config.config.updateInterval - 1000) {
+      return;
+    }
+    this.lastAnalysisTime = now;
     try {
       const analysisResults = await Promise.all(
         this.config.config.symbols.map((symbol) => this.analyzeStock(symbol)),
@@ -61,27 +74,34 @@ export class AnalysisAgent extends EventEmitter {
 
   private async analyzeStock(symbol: string): Promise<TradeSignal | null> {
     try {
-      // TODO: Implement actual technical and fundamental analysis
-      // This is a placeholder implementation
-      const mockConfidence = Math.random();
-      const mockAction =
-        mockConfidence > 0.6 ? "BUY" : mockConfidence < 0.4 ? "SELL" : "HOLD";
-      const mockPrice = Math.random() * 1000;
+      // Get last 30 bars for the symbol
+      const bars = useMarketDataStore.getState().barData[symbol] || [];
+      const last30Bars = bars.slice(-30);
+      if (last30Bars.length < 10) return null; // Not enough data
+
+      // Call the AI endpoint
+      const response = await fetch('/api/ai/chart-analysis', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol, bars: last30Bars }),
+      });
+      if (!response.ok) throw new Error('AI analysis failed');
+      const data = await response.json();
 
       return {
         symbol,
-        action: mockAction as "BUY" | "SELL",
-        price: mockPrice,
-        confidence: mockConfidence,
-        timestamp: new Date(),
-        source: "ANALYSIS",
+        action: data.action,
+        price: data.price,
+        confidence: data.confidence,
+        timestamp: new Date(data.timestamp),
+        source: 'ANALYSIS',
         analysis: {
-          sentiment: mockConfidence > 0.6 ? "bullish" : mockConfidence < 0.4 ? "bearish" : "neutral",
+          sentiment: data.confidence > 0.7 ? 'bullish' : 'bearish',
           keyEvents: [],
-          reasoning: `Analysis based on ${this.config.config.technicalIndicators.length} technical indicators and ${this.config.config.fundamentalMetrics.length} fundamental metrics`,
+          reasoning: data.reasoning,
           predictedImpact: {
-            magnitude: mockConfidence,
-            timeframe: "short-term",
+            magnitude: data.confidence,
+            timeframe: 'short-term',
           },
         },
       };

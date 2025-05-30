@@ -6,6 +6,7 @@ import {
   MARKET_SENTIMENT_PROMPT,
   NEWS_ANALYSIS_PROMPT,
   TRADING_STRATEGY_PROMPT,
+  CHART_ANALYSIS_PROMPT,
 } from "./prompts";
 
 export interface ChatMessage {
@@ -185,8 +186,12 @@ class AIService {
       },
       {
         role: "user",
-        content: `Please generate a trading strategy for ${symbol} with ${timeframe} timeframe and ${riskTolerance} risk tolerance.
-        QuoteData: ${JSON.stringify(quoteData)}`,
+        content: `Please generate a trading strategy for the following data:
+        RiskTolerance: ${riskTolerance}
+        Timeframe: ${timeframe}
+        Symbol: ${symbol}
+        QuoteData: ${JSON.stringify(quoteData)}
+        MarketData: ${JSON.stringify(marketData)}`,
       },
     ];
 
@@ -378,6 +383,74 @@ class AIService {
         },
         keyEvents: [],
         reasoning: analysisText,
+      };
+    }
+  }
+
+  async analyzeChart(symbol: string, bars: object[]): Promise<{
+    action: "BUY" | "SELL" | "NEUTRAL";
+    confidence: number;
+    reasoning: string;
+    entry?: number;
+    stop?: number;
+    target?: number;
+    optionsPlay?: string;
+    riskReward?: number;
+    probabilityOfProfit?: number;
+  }> {
+    const messages: ChatMessage[] = [
+      {
+        role: "system",
+        content: CHART_ANALYSIS_PROMPT,
+      },
+      {
+        role: "user",
+        content: `Analyze the following chart for ${symbol}:\n${JSON.stringify(bars)}`,
+      },
+    ];
+
+    const response = await this.makeOpenAIRequest(messages, {
+      temperature: 0.2,
+      maxTokens: 500,
+    });
+
+    // Try to parse as JSON
+    try {
+      const parsed = JSON.parse(response);
+      return {
+        action: parsed.action,
+        confidence: parsed.confidence,
+        reasoning: parsed.reasoning,
+        entry: parsed.entry,
+        stop: parsed.stop,
+        target: parsed.target,
+        optionsPlay: parsed.optionsPlay,
+        riskReward: parsed.riskReward,
+        probabilityOfProfit: parsed.probabilityOfProfit,
+      };
+    } catch {
+      // Fallback: extract fields from text (basic regex or leave as undefined)
+      const action = response.includes("BUY") ? "BUY" : response.includes("SELL") ? "SELL" : "NEUTRAL";
+      const confidenceMatch = response.match(/confidence[":\s]*([0-9.]+)/i);
+      const confidence = confidenceMatch ? parseFloat(confidenceMatch[1]) : 0.7;
+      const reasoningMatch = response.match(/reasoning[":\s]*([^\n"]+)/i);
+      const reasoning = reasoningMatch ? reasoningMatch[1].trim() : response;
+      const entryMatch = response.match(/entry[":\s]*([0-9.]+)/i);
+      const stopMatch = response.match(/stop[":\s]*([0-9.]+)/i);
+      const targetMatch = response.match(/target[":\s]*([0-9.]+)/i);
+      const optionsPlayMatch = response.match(/optionsPlay[":\s]*([^\n"]+)/i);
+      const riskRewardMatch = response.match(/riskReward[":\s]*([0-9.]+)/i);
+      const probabilityMatch = response.match(/probabilityOfProfit[":\s]*([0-9.]+)/i);
+      return {
+        action,
+        confidence,
+        reasoning,
+        entry: entryMatch ? parseFloat(entryMatch[1]) : undefined,
+        stop: stopMatch ? parseFloat(stopMatch[1]) : undefined,
+        target: targetMatch ? parseFloat(targetMatch[1]) : undefined,
+        optionsPlay: optionsPlayMatch ? optionsPlayMatch[1].trim() : undefined,
+        riskReward: riskRewardMatch ? parseFloat(riskRewardMatch[1]) : undefined,
+        probabilityOfProfit: probabilityMatch ? parseFloat(probabilityMatch[1]) : undefined,
       };
     }
   }

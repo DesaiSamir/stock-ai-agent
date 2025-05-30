@@ -55,7 +55,8 @@ export class TradingAgent extends EventEmitter {
         action: signal.action,
         price: signal.price,
         quantity: position?.quantity || 0,
-        timestamp: new Date()
+        timestamp: new Date(),
+        source: signal.source
       } as TradeExecution);
     } catch (error) {
       console.error("Error handling trade signal:", error);

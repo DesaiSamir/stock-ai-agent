@@ -2,10 +2,17 @@ import React from 'react';
 import { Box, Typography, Chip } from '@mui/material';
 import { AgentCard } from './AgentCard';
 import { SignalsCardProps } from '@/types/agent-dashboard';
+import { useAgentMonitoringStore } from '@/store/agent-monitoring';
 
 export const SignalsCard: React.FC<SignalsCardProps> = ({ latestSignals }) => {
+  const { clearSignals } = useAgentMonitoringStore();
   return (
-    <AgentCard title="Latest Signals" headerColor="#ff9800">
+    <AgentCard
+      title="Latest Signals"
+      headerColor="#ff9800"
+      clearActionTitle="Clear Signals"
+      onClearAction={clearSignals}
+    >
       {latestSignals.map((signal, index) => (
         <Box
           key={index}
@@ -41,9 +48,9 @@ export const SignalsCard: React.FC<SignalsCardProps> = ({ latestSignals }) => {
               <Typography variant="caption" color="text.secondary">
                 Source
               </Typography>
-              {/* <Typography variant="body2">
+              <Typography variant="body2">
                 {signal.source}
-              </Typography> */}
+              </Typography>
             </Box>
             <Box>
               <Typography variant="caption" color="text.secondary">

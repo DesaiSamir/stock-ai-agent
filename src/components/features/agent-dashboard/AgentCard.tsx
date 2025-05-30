@@ -1,8 +1,16 @@
 import React from 'react';
-import { Card, CardContent, Typography, Box } from '@mui/material';
-import { AgentCardProps } from '@/types/agent-dashboard';
+import { Card, CardContent, Typography, Box, IconButton, Tooltip } from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
 
-export const AgentCard: React.FC<AgentCardProps> = ({ title, children, headerColor = '#1976d2' }) => {
+export interface AgentCardProps {
+  title: string;
+  children: React.ReactNode;
+  headerColor?: string;
+  clearActionTitle?: string;
+  onClearAction?: () => void;
+}
+
+export const AgentCard: React.FC<AgentCardProps> = ({ title, children, headerColor = '#1976d2', clearActionTitle, onClearAction }) => {
   return (
     <Card sx={{ 
       height: '100%',
@@ -13,11 +21,21 @@ export const AgentCard: React.FC<AgentCardProps> = ({ title, children, headerCol
       <Box sx={{ 
         bgcolor: headerColor,
         p: 1,
-        color: 'white'
+        color: 'white',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between'
       }}>
         <Typography variant="h6" sx={{ fontSize: '1rem' }}>
           {title}
         </Typography>
+        {onClearAction && (
+          <Tooltip title={clearActionTitle || 'Clear'}>
+            <IconButton size="small" color="inherit" onClick={onClearAction}>
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        )}
       </Box>
       <CardContent sx={{ 
         flex: 1,

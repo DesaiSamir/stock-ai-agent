@@ -14,12 +14,6 @@ export interface AgentStatusDisplay {
   lastUpdated: Date;
 }
 
-export interface AgentCardProps {
-  title: string;
-  children: React.ReactNode;
-  headerColor?: string;
-}
-
 export interface PriceCardProps {
   latestPrices: Record<string, Candlestick>;
 }
@@ -35,4 +29,5 @@ export interface TradesCardProps {
 export interface StatusCardProps {
   agentStatuses: Record<string, AgentStatusDisplay>;
   onStartStop: () => void;
+  isOrchestratorRunning?: boolean;
 } 

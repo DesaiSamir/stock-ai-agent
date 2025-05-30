@@ -31,6 +31,8 @@ export interface AgentMonitoringActions {
   setSymbolMonitoring: (symbol: string, isMonitoring: boolean) => void;
   getLastChecked: (symbol: string) => string | null;
   setOrchestratorRunning: (running: boolean) => void;
+  clearSignals: () => void;
+  clearTrades: () => void;
 }
 
 export type AgentMonitoringStore = AgentMonitoringState & AgentMonitoringActions;

@@ -19,7 +19,7 @@ interface TradingStrategyCardProps {
   symbol: string;
 }
 
-type TimeFrame = '1m' | '5m' | '15m' | '1h' | '4h' | '1d';
+type TimeFrame = '1m' | '5m' | '15m' | '1h' | '4h' | '1d' | '1w' | '1M';
 type RiskTolerance = 'low' | 'medium' | 'high';
 
 export const TradingStrategyCard: React.FC<TradingStrategyCardProps> = ({ symbol }) => {
@@ -51,7 +51,7 @@ export const TradingStrategyCard: React.FC<TradingStrategyCardProps> = ({ symbol
           symbol,
           timeframe,
           riskTolerance,
-          marketData: getBarData(symbol),
+          marketData: getBarData(symbol)?.slice(-30) || [],
           quoteData: getQuote(symbol),
         }),
       });
@@ -78,7 +78,9 @@ export const TradingStrategyCard: React.FC<TradingStrategyCardProps> = ({ symbol
       '15m': '15 Min',
       '1h': '1 Hour',
       '4h': '4 Hour',
-      '1d': 'Daily'
+      '1d': 'Daily',
+      '1w': 'Weekly',
+      '1M': 'Monthly'
     }[timeframe];
 
     return [

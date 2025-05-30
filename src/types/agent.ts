@@ -108,6 +108,7 @@ export interface TradeExecution {
   quantity: number;
   price: number;
   timestamp: Date;
+  source?: AgentType;
 }
 
 export interface BaseAgent extends EventEmitter {

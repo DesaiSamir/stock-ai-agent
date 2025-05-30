@@ -61,51 +61,53 @@ const FinancialChart = ({
   const [lastClose, setLastClose] = useState(0);
   const [lastColor, setLastColor] = useState("#26a69a");
 
+  const safeData = initialData.filter((d) => d && d.date);
+
   const xScaleProvider =
     discontinuousTimeScaleProviderBuilder().inputDateAccessor(
-      (d: ChartData) => new Date(d.date),
+      (d: ChartData | null | undefined) => d?.date ? new Date(d.date) : new Date(0),
     );
 
   const ema12 = ema()
     .id(1)
     .options({ windowSize: 21 })
     .merge((d: ChartData, c: number) => {
-      d.ema12 = c;
+      if (d) d.ema12 = c;
     })
-    .accessor((d: ChartData) => d.ema12 || 0);
+    .accessor((d: ChartData | null | undefined) => d?.ema12 ?? 0);
 
   const ema26 = ema()
     .id(2)
     .options({ windowSize: 51 })
     .merge((d: ChartData, c: number) => {
-      d.ema26 = c;
+      if (d) d.ema26 = c;
     })
-    .accessor((d: ChartData) => d.ema26 || 0);
+    .accessor((d: ChartData | null | undefined) => d?.ema26 ?? 0);
 
   const ema200 = ema()
     .id(3)
     .options({ windowSize: 200 })
     .merge((d: ChartData, c: number) => {
-      d.ema200 = c;
+      if (d) d.ema200 = c;
     })
-    .accessor((d: ChartData) => d.ema200 || 0)
+    .accessor((d: ChartData | null | undefined) => d?.ema200 ?? 0)
     .stroke("green");
 
   const sma200 = ema()
     .id(4)
     .options({ windowSize: 200 })
-    .accessor((d: ChartData) => d.sma200 || 0)
+    .accessor((d: ChartData | null | undefined) => d?.sma200 ?? 0)
     .stroke("#9B0A47");
 
   const elder = elderRay();
 
-  const calculatedData = elder(ema200(ema26(ema12(initialData))));
+  const calculatedData = elder(ema200(ema26(ema12(safeData))));
   const { data, xScale, xAccessor, displayXAccessor } =
     xScaleProvider(calculatedData);
 
   // Add index to data for previous/next calculations
   data.forEach((d: ChartData, i: number) => {
-    d.index = i;
+    if (d) d.index = i;
   });
 
   const max = xAccessor(data[data.length - 1]);
@@ -124,16 +126,16 @@ const FinancialChart = ({
 
   const timeDisplayFormat = timeFormat(dateTimeFormat);
 
-  const barChartExtents = (data: ChartData) => {
-    return data.volume || 0;
+  const barChartExtents = (data: ChartData | null | undefined) => {
+    return data?.volume ?? 0;
   };
 
   let dataLow = 0;
   let dataHigh = 0;
 
-  const candleChartExtents = (data: ChartData) => {
-    const low = data.low || data.price;
-    const high = data.high || data.price;
+  const candleChartExtents = (data: ChartData | null | undefined) => {
+    const low = data?.low ?? data?.price ?? 0;
+    const high = data?.high ?? data?.price ?? 0;
     dataLow = dataLow === 0 ? low : low < dataLow ? low : dataLow;
     dataHigh = dataHigh === 0 ? high : high > dataHigh ? high : dataHigh;
     const percentDiff = getPercentDiff(dataHigh, dataLow) / 1000;
@@ -143,42 +145,42 @@ const FinancialChart = ({
     return [highValue, lowValue];
   };
 
-  const yEdgeIndicator = (data: ChartData) => {
-    setLastClose(data.close || data.price);
-    return data.close || data.price;
+  const yEdgeIndicator = (data: ChartData | null | undefined) => {
+    setLastClose(data?.close ?? data?.price ?? 0);
+    return data?.close ?? data?.price ?? 0;
   };
 
-  const volumeColor = (data: ChartData) => {
-    const open = data.open || data.price;
-    const close = data.close || data.price;
+  const volumeColor = (data: ChartData | null | undefined) => {
+    const open = data?.open ?? data?.price ?? 0;
+    const close = data?.close ?? data?.price ?? 0;
     return close > open ? "rgba(38, 166, 154, 0.3)" : "rgba(239, 83, 80, 0.3)";
   };
 
-  const volumeSeries = (data: ChartData) => {
-    return data.volume || 0;
+  const volumeSeries = (data: ChartData | null | undefined) => {
+    return data?.volume ?? 0;
   };
 
-  const openCloseColor = (data: ChartData) => {
-    const open = data.open || data.price;
-    const close = data.close || data.price;
+  const openCloseColor = (data: ChartData | null | undefined) => {
+    const open = data?.open ?? data?.price ?? 0;
+    const close = data?.close ?? data?.price ?? 0;
     const color = close > open ? "#26a69a" : "#ef5350";
     setLastColor(color);
     return color;
   };
 
-  const candelFillColor = (data: ChartData, seriesData: ChartData[] = []) => {
+  const candelFillColor = (data: ChartData | null | undefined, seriesData: ChartData[] = []) => {
     const previous =
-      data.index !== undefined ? seriesData[data.index - 1] : undefined;
-    const open = data.open || data.price;
-    const close = data.close || data.price;
+      data?.index !== undefined ? seriesData[data.index - 1] : undefined;
+    const open = data?.open ?? data?.price ?? 0;
+    const close = data?.close ?? data?.price ?? 0;
     let fillColor =
       close > open
         ? "#ffffff00"
-        : previous && close >= (previous.close || previous.price)
+        : previous && close >= (previous.close ?? previous.price ?? 0)
           ? "#26a69a"
           : "#ef5350";
 
-    switch (data.patternType) {
+    switch (data?.patternType) {
       case "bullish":
         fillColor = "green";
         break;
@@ -192,14 +194,14 @@ const FinancialChart = ({
     return fillColor;
   };
 
-  const candelStrokeColor = (data: ChartData, seriesData: ChartData[] = []) => {
+  const candelStrokeColor = (data: ChartData | null | undefined, seriesData: ChartData[] = []) => {
     const previous =
-      data.index !== undefined ? seriesData[data.index - 1] : undefined;
-    const open = data.open || data.price;
-    const close = data.close || data.price;
+      data?.index !== undefined ? seriesData[data.index - 1] : undefined;
+    const open = data?.open ?? data?.price ?? 0;
+    const close = data?.close ?? data?.price ?? 0;
     const dataMax = Math.max(open, close);
-    const prevOpen = previous?.open || previous?.price || 0;
-    const prevClose = previous?.close || previous?.price || 0;
+    const prevOpen = previous?.open ?? previous?.price ?? 0;
+    const prevClose = previous?.close ?? previous?.price ?? 0;
     const prevMax = Math.max(prevOpen, prevClose);
     const prevMin = Math.min(prevOpen, prevClose);
     const strokeColor =
@@ -218,28 +220,28 @@ const FinancialChart = ({
     return strokeColor;
   };
 
-  const candlestickYAccessor = (data: ChartData) => {
+  const candlestickYAccessor = (data: ChartData | null | undefined) => {
     return {
-      open: data.open || data.price,
-      high: data.high || data.price,
-      low: data.low || data.price,
-      close: data.close || data.price,
+      open: data?.open ?? data?.price ?? 0,
+      high: data?.high ?? data?.price ?? 0,
+      low: data?.low ?? data?.price ?? 0,
+      close: data?.close ?? data?.price ?? 0,
     };
   };
 
-  const averageVolume = (data: ChartData[]) => {
+  const averageVolume = (data: (ChartData | null | undefined)[]) => {
     const { length } = data;
     return data.reduce((acc, val) => {
-      return acc + (val.volume || 0) / length;
+      return acc + (val?.volume ?? 0) / length;
     }, 0);
   };
 
-  const whenBullish = (data: ChartData) => {
-    return data.patternType === "bullish";
+  const whenBullish = (data: ChartData | null | undefined) => {
+    return data?.patternType === "bullish";
   };
 
-  const whenBearish = (data: ChartData) => {
-    return data.patternType === "bearish";
+  const whenBearish = (data: ChartData | null | undefined) => {
+    return data?.patternType === "bearish";
   };
 
   interface ChartScale {
@@ -439,7 +441,7 @@ const FinancialChart = ({
         />
         <OHLCTooltip
           origin={[8, 16]}
-          textFill={(d) => (d.close > d.open ? "#26a69a" : "#ef5350")}
+          textFill={(d) => (d?.close > d?.open ? "#26a69a" : "#ef5350")}
         />
         <HoverTooltip
           yAccessor={ema200.accessor()}
@@ -450,40 +452,58 @@ const FinancialChart = ({
                 {
                   label: "Open",
                   value:
-                    currentItem.open && pricesDisplayFormat(currentItem.open),
+                    currentItem?.open != null
+                      ? pricesDisplayFormat(currentItem.open)
+                      : "-",
                 },
                 {
                   label: "High",
                   value:
-                    currentItem.high && pricesDisplayFormat(currentItem.high),
+                    currentItem?.high != null
+                      ? pricesDisplayFormat(currentItem.high)
+                      : "-",
                 },
                 {
                   label: "Low",
                   value:
-                    currentItem.low && pricesDisplayFormat(currentItem.low),
+                    currentItem?.low != null
+                      ? pricesDisplayFormat(currentItem.low)
+                      : "-",
                 },
                 {
                   label: "Close",
                   value:
-                    currentItem.close && pricesDisplayFormat(currentItem.close),
+                    currentItem?.close != null
+                      ? pricesDisplayFormat(currentItem.close)
+                      : "-",
                 },
                 {
                   label: "Volume",
                   value:
-                    currentItem.volume &&
-                    numberDisplayFormat(currentItem.volume),
+                    currentItem?.volume != null
+                      ? numberDisplayFormat(currentItem.volume)
+                      : "-",
                 },
                 {
                   label: "Bar %",
-                  value: `${pricesDisplayFormat(((currentItem.high - currentItem.low) * 100) / lastClose)}%`,
+                  value:
+                    currentItem?.high != null && currentItem?.low != null && lastClose
+                      ? `${pricesDisplayFormat(((currentItem.high - currentItem.low) * 100) / lastClose)}%`
+                      : "-",
                 },
                 {
                   label: "H200 %",
-                  value: `${currentItem.ema200 && pricesDisplayFormat(getPercentDiff(currentItem.high || currentItem.price, currentItem.ema200))}%`,
+                  value:
+                    currentItem?.ema200 != null && (currentItem?.high != null || currentItem?.price != null)
+                      ? `${pricesDisplayFormat(getPercentDiff((currentItem.high ?? currentItem.price ?? 0), currentItem.ema200))}%`
+                      : "-",
                 },
                 {
                   label: "L200 %",
-                  value: `${currentItem.ema200 && pricesDisplayFormat(getPercentDiff(currentItem.low || currentItem.price, currentItem.ema200))}%`,
+                  value:
+                    currentItem?.ema200 != null && (currentItem?.low != null || currentItem?.price != null)
+                      ? `${pricesDisplayFormat(getPercentDiff((currentItem.low ?? currentItem.price ?? 0), currentItem.ema200))}%`
+                      : "-",
                 },
               ],
             }),

@@ -164,7 +164,11 @@ export const useAgentMonitoringStore = create<AgentMonitoringStore>()(
       getLastChecked: (symbol: string): string | null => {
         const state = get();
         return state.monitoringState[symbol]?.lastChecked || null;
-      }
+      },
+
+      clearSignals: () => set({ latestSignals: [] }),
+
+      clearTrades: () => set({ recentTrades: [] }),
     }),
     {
       name: 'agent-monitoring-store',

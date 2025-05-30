@@ -43,7 +43,7 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
     if (!isOrchestratorRunning) {
       const newOrchestrator = new AgentOrchestrator({
         symbols: ['AAPL'],
-        updateInterval: 60000, // 1 minute
+        updateInterval: 60000 * 15, // 15 minutes
         technicalIndicators: ['EMA', 'RSI', 'MACD', 'BB'],
         fundamentalMetrics: ['PE', 'PB', 'ROE', 'DEBT_EQUITY'],
         minConfidence: 0.7,

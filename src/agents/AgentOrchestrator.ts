@@ -77,7 +77,7 @@ export class AgentOrchestrator extends EventEmitter {
       lastUpdated: new Date(),
       config: {
         symbols: config.symbols,
-        updateInterval: config.updateInterval,
+        updateInterval: 0,
         newsSources: config.newsSources,
       },
     });
@@ -216,8 +216,23 @@ export class AgentOrchestrator extends EventEmitter {
   }
 
   updateConfig(newConfig: Partial<OrchestratorConfig>): void {
+    const prevSymbols = this.config.symbols.join(',');
     this.config = { ...this.config, ...newConfig };
-    // TODO: Implement config update logic for individual agents
+    // Update symbols in each agent's config
+    if (newConfig.symbols) {
+      this.analysisAgent.getStatus().config.symbols = newConfig.symbols;
+      this.tradingAgent.getStatus().config.symbols = newConfig.symbols;
+      this.newsAgent.getStatus().config.symbols = newConfig.symbols;
+      this.tickerAgent.getStatus().config.symbols = newConfig.symbols;
+      // Call updateConfig on NewsAgent to ensure its monitoring loop is updated
+      if (typeof this.newsAgent.updateConfig === 'function') {
+        this.newsAgent.updateConfig({ symbols: newConfig.symbols });
+      }
+    }
+    // If symbols changed, restart agents to apply new config
+    if (newConfig.symbols && newConfig.symbols.join(',') !== prevSymbols) {
+      this.stop().then(() => this.start());
+    }
   }
 
   getPositions() {

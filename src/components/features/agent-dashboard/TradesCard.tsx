@@ -2,10 +2,17 @@ import React from 'react';
 import { Box, Typography, Chip } from '@mui/material';
 import { AgentCard } from './AgentCard';
 import { TradesCardProps } from '@/types/agent-dashboard';
+import { useAgentMonitoringStore } from '@/store/agent-monitoring';
 
 export const TradesCard: React.FC<TradesCardProps> = ({ recentTrades }) => {
+  const { clearTrades } = useAgentMonitoringStore();
   return (
-    <AgentCard title="Recent Trades" headerColor="#9c27b0">
+    <AgentCard
+      title="Recent Trades"
+      headerColor="#9c27b0"
+      clearActionTitle="Clear Trades"
+      onClearAction={clearTrades}
+    >
       {recentTrades.map((trade, index) => (
         <Box
           key={index}
@@ -28,7 +35,7 @@ export const TradesCard: React.FC<TradesCardProps> = ({ recentTrades }) => {
               size="small"
             />
           </Box>
-          <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <Box>
               <Typography variant="caption" color="text.secondary">
                 Shares
@@ -50,7 +57,7 @@ export const TradesCard: React.FC<TradesCardProps> = ({ recentTrades }) => {
                 Total
               </Typography>
               <Typography variant="body2">
-                ${(trade.quantity * trade.price).toFixed(2)}
+                ${(trade.price * trade.quantity).toFixed(2)}
               </Typography>
             </Box>
             <Box>
@@ -61,14 +68,14 @@ export const TradesCard: React.FC<TradesCardProps> = ({ recentTrades }) => {
                 {new Date(trade.timestamp).toLocaleTimeString()}
               </Typography>
             </Box>
-          </Box>
-          <Box sx={{ mt: 0.5 }}>
-            <Typography variant="caption" color="text.secondary">
-              Status
-            </Typography>
-            <Typography variant="body2" color={trade.status === 'EXECUTED' ? 'success.main' : 'warning.main'}>
-              {trade.status}
-            </Typography>
+            <Box>
+              <Typography variant="caption" color="text.secondary">
+                Source
+              </Typography>
+              <Typography variant="body2">
+                {trade.source}
+              </Typography>
+            </Box>
           </Box>
         </Box>
       ))}

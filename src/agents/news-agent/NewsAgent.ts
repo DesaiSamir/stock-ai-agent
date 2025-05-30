@@ -26,6 +26,10 @@ export class NewsAgent extends EventEmitter {
   constructor(config: NewsAgentConfig) {
     super();
     this.config = config;
+    // Set default updateInterval to 15 minutes if not provided
+    if (!this.config.config.updateInterval || this.config.config.updateInterval < 60000) {
+      this.config.config.updateInterval = 15 * 60 * 1000; // 15 minutes
+    }
   }
 
   async start(): Promise<void> {
@@ -173,5 +177,22 @@ export class NewsAgent extends EventEmitter {
 
   getStatus(): AgentConfig {
     return this.config;
+  }
+
+  // Add this method to allow updating config from orchestrator
+  updateConfig(newConfig: Partial<NewsAgentConfig["config"]>) {
+    if (newConfig.symbols) {
+      this.config.config.symbols = [...newConfig.symbols]; // Replace with new symbols
+    }
+    if (newConfig.updateInterval) {
+      this.config.config.updateInterval = newConfig.updateInterval;
+    }
+    if (newConfig.newsSources) {
+      this.config.config.newsSources = [...newConfig.newsSources];
+    }
+    // If agent is running, restart monitoring with new config
+    if (this.config.status === "ACTIVE") {
+      this.stop().then(() => this.start());
+    }
   }
 }

@@ -14,7 +14,6 @@ export const AgentDashboard: React.FC = () => {
   // Get state from store
   const {
     agentStatuses,
-    latestPrices,
     latestSignals,
     recentTrades,
     toggleAgents
@@ -49,7 +48,7 @@ export const AgentDashboard: React.FC = () => {
         overflow: 'hidden',
         pb: 4
       }}>
-        <PriceCard latestPrices={latestPrices} />
+        <PriceCard />
         <SignalsCard latestSignals={latestSignals} />
         <TradesCard recentTrades={recentTrades} />
       </Box>

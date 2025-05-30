@@ -1,14 +1,17 @@
 import React from 'react';
 import { Box, Typography } from '@mui/material';
 import { AgentCard } from './AgentCard';
-import { PriceCardProps } from '@/types/agent-dashboard';
+import { useMarketDataStore } from '@/store/market-data';
 
-export const PriceCard: React.FC<PriceCardProps> = ({ latestPrices }) => {
+export const PriceCard: React.FC = () => {
+  const { quotes, currentSymbol } = useMarketDataStore();
+  const priceData = currentSymbol ? quotes[currentSymbol] : undefined;
+
   return (
     <AgentCard title="Latest Prices" headerColor="#4caf50">
-      {Object.entries(latestPrices).map(([symbol, data]) => (
+      {priceData ? (
         <Box
-          key={symbol}
+          key={currentSymbol}
           sx={{
             p: 1,
             mb: 0.5,
@@ -20,32 +23,31 @@ export const PriceCard: React.FC<PriceCardProps> = ({ latestPrices }) => {
         >
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
             <Typography variant="subtitle2" fontWeight="bold">
-              {symbol}
+              {currentSymbol}
             </Typography>
-            {/* <Typography variant="subtitle2" color={data.change >= 0 ? 'success.main' : 'error.main'}>
-              {data.change >= 0 ? '+' : ''}{data.change.toFixed(2)}%
-            </Typography> */}
           </Box>
           <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1 }}>
             <Box>
+              <Typography variant="caption" color="text.secondary">Bid</Typography>
+              <Typography variant="body2">{priceData.Bid?.toFixed(2) ?? '-'}</Typography>
+            </Box>
+            <Box>
+              <Typography variant="caption" color="text.secondary">Ask</Typography>
+              <Typography variant="body2">{priceData.Ask?.toFixed(2) ?? '-'}</Typography>
+            </Box>
+            <Box>
+              <Typography variant="caption" color="text.secondary">Last</Typography>
+              <Typography variant="body2">{priceData.Last?.toFixed(2) ?? '-'}</Typography>
+            </Box>
+            <Box>
               <Typography variant="caption" color="text.secondary">Open</Typography>
-              <Typography variant="body2">{data.open.toFixed(2)}</Typography>
-            </Box>
-            <Box>
-              <Typography variant="caption" color="text.secondary">High</Typography>
-              <Typography variant="body2">{data.high.toFixed(2)}</Typography>
-            </Box>
-            <Box>
-              <Typography variant="caption" color="text.secondary">Low</Typography>
-              <Typography variant="body2">{data.low.toFixed(2)}</Typography>
-            </Box>
-            <Box>
-              <Typography variant="caption" color="text.secondary">Close</Typography>
-              <Typography variant="body2">{data.close.toFixed(2)}</Typography>
+              <Typography variant="body2">{priceData.Open?.toFixed(2) ?? '-'}</Typography>
             </Box>
           </Box>
         </Box>
-      ))}
+      ) : (
+        <Typography variant="body2" color="text.secondary">No price data available.</Typography>
+      )}
     </AgentCard>
   );
 }; 

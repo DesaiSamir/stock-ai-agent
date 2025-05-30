@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AgentOrchestrator } from '@/agents/AgentOrchestrator';
 import { useAgentMonitoringStore } from '@/store/agent-monitoring';
+import { useMarketDataStore } from '@/store/market-data';
 
 // Extend Window interface to include our global orchestrator
 declare global {
@@ -19,6 +20,7 @@ export function useAgentOrchestrator() {
     isOrchestratorRunning,
     setOrchestratorRunning
   } = useAgentMonitoringStore();
+  const { currentSymbol } = useMarketDataStore();
 
   // Handle client-side only initialization
   useEffect(() => {
@@ -32,6 +34,11 @@ export function useAgentOrchestrator() {
     // Get the orchestrator instance from the window object
     const orchestrator = window.orchestrator;
     if (!orchestrator) return;
+
+    // Listen for symbol changes and update agent configs
+    if (currentSymbol) {
+      orchestrator.updateConfig({ symbols: [currentSymbol] });
+    }
 
     const setupEventListeners = () => {
       // Clear any existing listeners
@@ -72,7 +79,7 @@ export function useAgentOrchestrator() {
         orchestrator.removeAllListeners();
       }
     };
-  }, [isClient, updateAgentStatuses, addTradeExecution, updatePrice, addSignal, setOrchestratorRunning]);
+  }, [isClient, updateAgentStatuses, addTradeExecution, updatePrice, addSignal, setOrchestratorRunning, currentSymbol]);
 
   return {
     isRunning: isOrchestratorRunning,
