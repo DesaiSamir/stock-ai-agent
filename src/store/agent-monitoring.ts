@@ -67,27 +67,27 @@ export const useAgentMonitoringStore = create<AgentMonitoringStore>()(
 
         try {
           const rawStatuses = orchestratorInstance.getAgentStatuses();
-          console.log('Raw agent statuses:', rawStatuses);
-          
-          // Transform the raw statuses into the expected format
-          const statuses = Object.entries(rawStatuses).reduce((acc, [key, config]) => {
-            acc[key] = {
-              name: config.name,
-              status: config.status,
-              lastUpdated: config.lastUpdated
-            };
-            return acc;
-          }, {} as Record<string, AgentStatusDisplay>);
-          
-          console.log('Transformed agent statuses:', statuses);
+        console.log('Raw agent statuses:', rawStatuses);
+        
+        // Transform the raw statuses into the expected format
+        const statuses = Object.entries(rawStatuses).reduce((acc, [key, config]) => {
+          acc[key] = {
+            name: config.name,
+            status: config.status,
+            lastUpdated: config.lastUpdated
+          };
+          return acc;
+        }, {} as Record<string, AgentStatusDisplay>);
+        
+        console.log('Transformed agent statuses:', statuses);
           const positions = orchestratorInstance.getPositions();
-          
+        
           // Only update if we have valid statuses
           if (Object.keys(statuses).length > 0) {
-            set({
-              agentStatuses: statuses,
-              positions: positions
-            });
+        set({
+          agentStatuses: statuses,
+          positions: positions
+        });
           }
         } catch (error) {
           console.error('Error updating agent statuses:', error);
@@ -126,7 +126,7 @@ export const useAgentMonitoringStore = create<AgentMonitoringStore>()(
             // First update local state to prevent multiple stops
             set({ isOrchestratorRunning: false });
             await orchestratorInstance.stop();
-          } else {
+        } else {
             // First update local state to prevent multiple starts
             set({ isOrchestratorRunning: true });
             await orchestratorInstance.start();

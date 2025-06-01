@@ -8,6 +8,7 @@ import React, {
   PropsWithChildren,
 } from "react";
 import { ThemeProvider as MuiThemeProvider, createTheme } from "@mui/material";
+import CssBaseline from "@mui/material/CssBaseline";
 
 type ThemeMode = "light" | "dark";
 
@@ -37,29 +38,44 @@ export const ThemeProvider = ({ children }: PropsWithChildren) => {
           mode,
           ...(mode === "light"
             ? {
-                // Light mode colors
-                primary: { main: "#1976d2" },
-                background: {
-                  default: "#f5f5f5",
-                  paper: "#ffffff",
-                },
-                text: {
-                  primary: "#1a1a1a",
-                  secondary: "#666666",
-                },
+                primary: { main: "#0ea5e9", light: "#38bdf8", dark: "#0284c7" },
+                secondary: { main: "#6b7280", light: "#9ca3af", dark: "#4b5563" },
+                background: { default: "#f9fafb", paper: "#ffffff" },
+                text: { primary: "#1a1a1a", secondary: "#666666" },
               }
             : {
-                // Dark mode colors
                 primary: { main: "#90caf9" },
-                background: {
-                  default: "#131722",
-                  paper: "#1e222d",
-                },
-                text: {
-                  primary: "#ffffff",
-                  secondary: "#b3b3b3",
-                },
+                background: { default: "#131722", paper: "#1e222d" },
+                text: { primary: "#ffffff", secondary: "#b3b3b3" },
               }),
+        },
+        typography: {
+          fontFamily: "Inter, sans-serif",
+          h1: { fontSize: "2.5rem", fontWeight: 600 },
+          h2: { fontSize: "2rem", fontWeight: 600 },
+          h3: { fontSize: "1.75rem", fontWeight: 600 },
+          h4: { fontSize: "1.5rem", fontWeight: 600 },
+          h5: { fontSize: "1.25rem", fontWeight: 600 },
+          h6: { fontSize: "1rem", fontWeight: 600 },
+        },
+        components: {
+          MuiButton: {
+            styleOverrides: {
+              root: {
+                textTransform: "none",
+                borderRadius: 8,
+              },
+            },
+          },
+          MuiCard: {
+            styleOverrides: {
+              root: {
+                borderRadius: 12,
+                boxShadow:
+                  "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+              },
+            },
+          },
         },
       }),
     [mode],
@@ -67,7 +83,10 @@ export const ThemeProvider = ({ children }: PropsWithChildren) => {
 
   return (
     <ThemeContext.Provider value={{ mode, toggleTheme }}>
-      <MuiThemeProvider theme={theme}>{children}</MuiThemeProvider>
+      <MuiThemeProvider theme={theme}>
+        <CssBaseline />
+        {children}
+      </MuiThemeProvider>
     </ThemeContext.Provider>
   );
 };

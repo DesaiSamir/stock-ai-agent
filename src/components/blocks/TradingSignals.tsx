@@ -14,8 +14,6 @@ export const TradingSignals: React.FC<TradingSignalsProps> = ({ signals }) => {
         return "success";
       case "SELL":
         return "error";
-      case "HOLD":
-        return "warning";
       default:
         return "info";
     }

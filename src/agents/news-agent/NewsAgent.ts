@@ -1,8 +1,9 @@
 import { EventEmitter } from "events";
 import type { NewsAgentConfig, TradeSignal, AgentConfig, NewsItem } from "../../types/agent";
-import axios from "axios";
 import { useAgentMonitoringStore } from "@/store/agent-monitoring";
 import { useNewsStore } from "@/store/news-store";
+import { ENDPOINTS } from "@/constants/http";
+import { httpService } from "@/services/http-client";
 
 interface NewsAPIResponse {
   articles: Array<NewsItem>;
@@ -93,20 +94,20 @@ export class NewsAgent extends EventEmitter {
         store.setSymbolMonitoring(symbol, true);
         
         try {
-          const response = await axios.get<NewsAPIResponse>(`/api/news?symbol=${symbol}`);
+          const response = await httpService.get<NewsAPIResponse>(`${ENDPOINTS.NEWS.GET_NEWS}?symbol=${symbol}`);
           
           // Store news data
           useNewsStore.getState().addNewsData(
             symbol,
-            response.data.articles.map(article => ({
+            response.articles.map(article => ({
               ...article,
               id: `${symbol}-${article.publishedAt}-${article.url}` // Generate unique id
             })),
-            response.data.analysis
+            response.analysis
           );
 
           // Generate trade signal if significant analysis exists
-          const signal = await this.analyzeNewsForSymbol(symbol, response.data);
+          const signal = await this.analyzeNewsForSymbol(symbol, response);
           if (signal) {
             this.emit("newsSignal", signal);
           }

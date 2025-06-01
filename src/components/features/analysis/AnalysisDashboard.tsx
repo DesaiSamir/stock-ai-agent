@@ -1,5 +1,5 @@
 import React from 'react';
-import { Container, Box } from '@mui/material';
+import { Box } from '@mui/material';
 import { MarketAnalysisPanel } from './MarketAnalysisPanel';
 import { TradingStrategyCard } from './TradingStrategyCard';
 import { Candlestick } from '@/types/candlestick';
@@ -14,17 +14,16 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
   marketData,
 }) => {
   return (
-    <Container
-      maxWidth="lg"
+    <Box
       sx={{
-        width: '100%',
         height: '100%',
-        maxHeight: '100vh',
+        maxHeight: '100%',
         display: 'flex',
         flexDirection: 'column',
-        overflowY: 'auto',
-        py: 1,
-        minHeight: 0,
+        overflow: 'hidden',
+        p: 1,
+        pb: 3,
+        gap: 1
       }}
     >
       <Box
@@ -66,6 +65,6 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
           <TradingStrategyCard symbol={symbol} />
         </Box>
       </Box>
-    </Container>
+    </Box>
   );
 }; 

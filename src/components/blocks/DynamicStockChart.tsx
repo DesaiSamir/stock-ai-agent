@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { TimeIntervalSelector } from "../core/TimeIntervalSelector";
 import { StockStats } from "../charts/stock-stats";
 import { Box } from "@mui/material";
 import { useStockData } from "../../hooks/useStockData";
@@ -103,8 +102,6 @@ export const DynamicStockChart: React.FC<DynamicStockChartProps> = ({
           />
         )}
       </Box>
-
-      <TimeIntervalSelector />
     </Box>
   );
 };

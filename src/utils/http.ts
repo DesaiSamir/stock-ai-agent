@@ -76,9 +76,9 @@ export const http = {
 
     try {
       this.isQuoteFetching = true;
-      const response = await this.post<QuoteData[]>(`${ENDPOINTS.MARKET_DATA}`, {
+      const response = await this.post<QuoteData[]>(`${ENDPOINTS.TRADESTATION.MARKET_DATA}`, {
         method: HTTP_METHODS.GET,
-        url: `${ENDPOINTS.QUOTE}/${symbol}`,
+        url: `${ENDPOINTS.TRADESTATION.QUOTE}/${symbol}`,
       });
 
       
@@ -146,8 +146,8 @@ export const http = {
             payload.isPreMarket,
           );
 
-          const url = `${ENDPOINTS.BARCHART}/${barchartRequest.symbol}/${barchartRequest.interval}/${barchartRequest.unit}/${barchartRequest.barsBack}/${barchartRequest.lastDate}${barchartRequest.sessionTemplate ? `?SessionTemplate=${barchartRequest.sessionTemplate}` : ""}`;
-          const data = await this.post<BarData[]>(`${ENDPOINTS.MARKET_DATA}`, {
+          const url = `${ENDPOINTS.TRADESTATION.BARCHART}/${barchartRequest.symbol}/${barchartRequest.interval}/${barchartRequest.unit}/${barchartRequest.barsBack}/${barchartRequest.lastDate}${barchartRequest.sessionTemplate ? `?SessionTemplate=${barchartRequest.sessionTemplate}` : ""}`;
+          const data = await this.post<BarData[]>(`${ENDPOINTS.TRADESTATION.MARKET_DATA}`, {
             method: HTTP_METHODS.GET,
             url: url,
           });

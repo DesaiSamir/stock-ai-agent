@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { aiService } from '@/app/api/services/ai/aiService';
+import { TradeSignal } from '@/types/agent';
 
 export async function POST(req: NextRequest) {
   const { symbol, bars } = await req.json();
@@ -10,19 +11,25 @@ export async function POST(req: NextRequest) {
   // Use the last bar for price and timestamp
   const lastBar = bars[bars.length - 1];
 
-  return NextResponse.json({
+  const response: TradeSignal = {
     symbol,
-    action: aiResult.action,
+    action: aiResult.action as 'BUY' | 'SELL',
     confidence: aiResult.confidence,
-    reasoning: aiResult.reasoning,
-    entry: aiResult.entry,
-    stop: aiResult.stop,
-    target: aiResult.target,
-    optionsPlay: aiResult.optionsPlay,
-    riskReward: aiResult.riskReward,
-    probabilityOfProfit: aiResult.probabilityOfProfit,
+    analysis: {
+      sentiment: aiResult.confidence > 0.7 ? 'bullish' : 'bearish',
+      keyEvents: [],
+      reasoning: aiResult?.reasoning,
+      predictedImpact: {
+        magnitude: aiResult.confidence,
+        timeframe: 'short-term',
+      },
+      optionsPlay: aiResult?.optionsPlay,
+    },
+    rawResponse: aiResult.rawResponse,
     price: lastBar.close,
     timestamp: new Date(),
-    source: 'AI',
-  });
+    source: 'ANALYSIS',
+  }
+
+  return NextResponse.json(response);
 } 

@@ -6,6 +6,8 @@ import type {
   AgentConfig 
 } from "../../types/agent";
 import { useMarketDataStore } from '@/store/market-data';
+import { ENDPOINTS } from "@/constants/http";
+import { httpService } from "@/services/http-client";
 
 export class AnalysisAgent extends EventEmitter {
   private config: AnalysisAgentConfig;
@@ -80,31 +82,9 @@ export class AnalysisAgent extends EventEmitter {
       if (last30Bars.length < 10) return null; // Not enough data
 
       // Call the AI endpoint
-      const response = await fetch('/api/ai/chart-analysis', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbol, bars: last30Bars }),
-      });
-      if (!response.ok) throw new Error('AI analysis failed');
-      const data = await response.json();
+      const response = await httpService.post<TradeSignal>(ENDPOINTS.AI.CHART_ANALYSIS, { symbol, bars: last30Bars });
 
-      return {
-        symbol,
-        action: data.action,
-        price: data.price,
-        confidence: data.confidence,
-        timestamp: new Date(data.timestamp),
-        source: 'ANALYSIS',
-        analysis: {
-          sentiment: data.confidence > 0.7 ? 'bullish' : 'bearish',
-          keyEvents: [],
-          reasoning: data.reasoning,
-          predictedImpact: {
-            magnitude: data.confidence,
-            timeframe: 'short-term',
-          },
-        },
-      };
+      return response;
     } catch (error) {
       console.error(`Error analyzing ${symbol}:`, error);
       return null;

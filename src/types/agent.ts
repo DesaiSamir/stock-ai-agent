@@ -57,7 +57,9 @@ export interface TradeSignal {
       magnitude: number;
       timeframe: 'immediate' | 'short-term' | 'long-term';
     };
+    optionsPlay?: string;
   };
+  rawResponse?: string;
 }
 
 export interface BaseAgentConfig extends AgentConfig {
@@ -109,6 +111,8 @@ export interface TradeExecution {
   price: number;
   timestamp: Date;
   source?: AgentType;
+  reasoning?: string;
+  optionsPlay?: string;
 }
 
 export interface BaseAgent extends EventEmitter {

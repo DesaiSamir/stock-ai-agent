@@ -108,25 +108,26 @@ export const MarketAnalysisPanel: React.FC<MarketAnalysisPanelProps> = () => {
           borderColor: 'divider',
         }}
       >
-        <Typography variant="h5" gutterBottom>
-          Market Analysis: {symbol}
-        </Typography>
-        
-        <Typography variant="body2" color="text.secondary" gutterBottom>
-          Last Price: ${marketData[marketData.length - 1].close.toFixed(2)}
-          <br />
-          Volume: {marketData[marketData.length - 1].volume || 0}
-        </Typography>
-
-        <Button
-          variant="contained"
-          onClick={requestAnalysis}
-          disabled={loading}
-          sx={{ my: 1 }}
-        >
-          {loading ? <CircularProgress size={24} /> : 'Analyze Market'}
-        </Button>
-
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 2 }}>
+          <Box>
+            <Typography variant="h5" gutterBottom>
+              Market Analysis: {symbol}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              Last Price: ${marketData[marketData.length - 1].close.toFixed(2)}
+              <br />
+              Volume: {marketData[marketData.length - 1].volume || 0}
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            onClick={requestAnalysis}
+            disabled={loading}
+            sx={{ my: 1, minWidth: 160 }}
+          >
+            {loading ? <CircularProgress size={24} /> : 'Analyze Market'}
+          </Button>
+        </Box>
         {error && (
           <Typography color="error" sx={{ mt: 1 }}>
             {error}

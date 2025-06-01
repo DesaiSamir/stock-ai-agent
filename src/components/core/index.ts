@@ -13,6 +13,4 @@ export type { CardProps } from "./Card";
 export { Alert } from "./Alert";
 export type { AlertProps } from "./Alert";
 
-export { ThemeProvider } from "./ThemeProvider";
-
 // Re-export other core components as needed

@@ -32,8 +32,8 @@ export interface AIAnalysisResponse {
   reasoning?: string;
 }
 
-class AIService {
-  private async makeOpenAIRequest(
+export class AIService {
+  public async makeOpenAIRequest(
     messages: ChatMessage[],
     options: Partial<{
       temperature: number;
@@ -399,6 +399,7 @@ class AIService {
     optionsPlay?: string;
     riskReward?: number;
     probabilityOfProfit?: number;
+    rawResponse?: string;
   }> {
     const messages: ChatMessage[] = [
       {
@@ -429,6 +430,7 @@ class AIService {
         optionsPlay: parsed.optionsPlay,
         riskReward: parsed.riskReward,
         probabilityOfProfit: parsed.probabilityOfProfit,
+        rawResponse: response,
       };
     } catch {
       // Fallback: extract fields from text (basic regex or leave as undefined)
@@ -453,6 +455,7 @@ class AIService {
         optionsPlay: optionsPlayMatch ? optionsPlayMatch[1].trim() : undefined,
         riskReward: riskRewardMatch ? parseFloat(riskRewardMatch[1]) : undefined,
         probabilityOfProfit: probabilityMatch ? parseFloat(probabilityMatch[1]) : undefined,
+        rawResponse: response,
       };
     }
   }
