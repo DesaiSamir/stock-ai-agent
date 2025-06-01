@@ -5,14 +5,15 @@ import React, { useState, useCallback, useEffect } from "react";
 import { AgentToolbar } from "../blocks/AgentToolbar";
 // import { StockChart } from "../blocks/StockChart";
 import { DynamicStockChart } from "../blocks/DynamicStockChart";
-import { AgentTabs } from "../blocks/AgentTabs";
-import { Box, Divider } from "@mui/material";
+// import { AgentTabs } from "../blocks/AgentTabs";
+import { Box } from "@mui/material";
 import { useMarketDataStore } from "@/store/market-data";
 import { AnalysisDashboard } from "../features/analysis/AnalysisDashboard";
 import { AgentDashboard } from "@/components/features/agent-dashboard/AgentDashboard";
 import { AgentOrchestrator } from "@/agents/AgentOrchestrator";
 import { useAgentMonitoringStore } from "@/store/agent-monitoring";
 import type { AgentTabKey } from "@/constants/sidebar";
+import { ChatPanel } from "../features/chat";
 
 interface StockDashboardProps {
   initialChartHeight?: number;
@@ -26,9 +27,9 @@ declare global {
 }
 
 export const StockDashboard: React.FC<StockDashboardProps> = ({
-  initialChartHeight = 60,
+  // initialChartHeight = 60,
 }) => {
-  const [chartHeight, setChartHeight] = useState(initialChartHeight);
+  // const [chartHeight, setChartHeight] = useState(initialChartHeight);
   const [isDragging, setIsDragging] = useState(false);
   const [activeAgent, setActiveAgent] = useState<AgentTabKey>("dynamic-chart");
 
@@ -91,9 +92,9 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
     }
   }, [currentSymbol, setCurrentSymbol]);
 
-  const handleMouseDown = useCallback(() => {
-    setIsDragging(true);
-  }, []);
+  // const handleMouseDown = useCallback(() => {
+  //   setIsDragging(true);
+  // }, []);
 
   const handleMouseUp = useCallback(() => {
     setIsDragging(false);
@@ -113,9 +114,9 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
     (e: React.MouseEvent) => {
       if (typeof window === "undefined") return;
       if (isDragging) {
-        const containerHeight = window.innerHeight;
-        const newHeight = (e.clientY / containerHeight) * 100;
-        setChartHeight(Math.min(Math.max(newHeight, 20), 80));
+        // const containerHeight = window.innerHeight;
+        // const newHeight = (e.clientY / containerHeight) * 100;
+        // setChartHeight(Math.min(Math.max(newHeight, 20), 80));
       }
     },
     [isDragging],
@@ -129,7 +130,7 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
         return <DynamicStockChart symbol={currentSymbol} />;
       case "news":
       case "trading":
-        return null;
+        return <ChatPanel />;
       case "analysis":
         return <AnalysisDashboard symbol={currentSymbol} marketData={barData[currentSymbol] || []} />;
       case "dashboard":
@@ -150,15 +151,15 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          position: "relative",
+          // position: "relative",
         }}
         onMouseMove={handleMouseMove}
       >
         <Box
           sx={{
-            height: `${chartHeight}%`,
+            height: "90%",
             minHeight: "20%",
-            maxHeight: "80%",
+            maxHeight: "90%",
             width: "100%",
             position: "relative",
             overflow: "hidden",
@@ -167,7 +168,7 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
           {renderChartComponent()}
         </Box>
 
-        <Divider
+        {/* <Divider
           onMouseDown={handleMouseDown}
           sx={{
             cursor: "row-resize",
@@ -195,7 +196,7 @@ export const StockDashboard: React.FC<StockDashboardProps> = ({
           }}
         >
           <AgentTabs />
-        </Box>
+        </Box> */}
       </Box>
     </Box>
   );
