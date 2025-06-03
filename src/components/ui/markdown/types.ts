@@ -1,4 +1,4 @@
 export interface ReactMarkdownRendererProps {
     content: string;
-    role: 'user' | 'assistant';
+    role: 'user' | 'assistant' | 'system';
 } 

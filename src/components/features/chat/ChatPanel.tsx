@@ -1,19 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Box } from '@mui/material';
-import { chatService, ChatMessage } from '@/services/chat';
+import { ChatService } from '@/services/chat';
 import ChatHeader from '@/components/features/chat/ChatHeader';
 import { ChatInput } from '@/components/features/chat/ChatInput';
 import { ChatMessageList } from '@/components/features/chat/ChatMessageList';
-
-const DEFAULT_SYSTEM_PROMPT = 'You are a helpful AI trading assistant.';
+import { TradingPanel } from '@/components/features/trading/TradingPanel';
+import { useChatStore, Message } from '@/store/chat';
 
 export const ChatPanel: React.FC = () => {
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'system', content: DEFAULT_SYSTEM_PROMPT },
-  ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const chatHistoryRef = useRef<HTMLDivElement>(null!);
+  const { messages, addMessage, clearMessages, setLoading: setStoreLoading } = useChatStore();
 
   // Auto-scroll to bottom after each message
   useEffect(() => {
@@ -22,33 +20,35 @@ export const ChatPanel: React.FC = () => {
     }
   }, [messages]);
 
-  const sendMessage = async () => {
+  const handleSubmit = async (input: string) => {
     if (!input.trim()) return;
     setLoading(true);
-    const userMessage: ChatMessage = { role: 'user', content: input };
+    setStoreLoading(true);
+
     try {
-      const response = await chatService.sendMessage([...messages, userMessage]);
-      setMessages(response.history);
+      // Use the processUserMessage method which handles the complete flow
+      await ChatService.getInstance().processUserMessage(input);
       setInput('');
-    } catch {
-      // Handle error
+    } catch (error) {
+      console.error('Failed to process message:', error);
+      // Add error message to chat
+      const errorMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        type: 'error',
+        content: 'Sorry, I encountered an error while processing your message.',
+        role: 'assistant',
+        timestamp: new Date().toISOString(),
+        conversationId: 'default'
+      };
+      addMessage(errorMessage);
     } finally {
       setLoading(false);
+      setStoreLoading(false);
     }
   };
 
-  const clearHistory = async () => {
-    setLoading(true);
-    try {
-      await chatService.clearHistory();
-      setMessages([
-        { role: 'system', content: DEFAULT_SYSTEM_PROMPT },
-      ]);
-    } catch {
-      // Handle error
-    } finally {
-      setLoading(false);
-    }
+  const clearHistory = () => {
+    clearMessages();
   };
 
   return (
@@ -75,7 +75,6 @@ export const ChatPanel: React.FC = () => {
           borderRadius: 3,
           boxShadow: 1,
           mx: 'auto',
-
         }}
       >
         <Box sx={{ flexShrink: 0 }}>
@@ -91,40 +90,37 @@ export const ChatPanel: React.FC = () => {
             p: 2,
             pb: 3
           }}>
-          <ChatMessageList messages={messages.slice(1)} chatHistoryRef={chatHistoryRef} />
+          <ChatMessageList messages={messages} chatHistoryRef={chatHistoryRef} />
         </Box>
         <Box sx={{ flexShrink: 0, px: 2, py: 2, borderTop: 1, borderColor: 'divider', bgcolor: 'background.paper', borderRadius: '0 0 1rem 1rem' }}>
           <ChatInput
             value={input}
-            onChange={e => setInput((e as React.ChangeEvent<HTMLTextAreaElement>).target.value)}
-            onKeyPress={e => {
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setInput(e.target.value)}
+            onKeyDown={(e: React.KeyboardEvent) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                sendMessage();
+                handleSubmit(input);
               }
             }}
-            onSend={sendMessage}
+            onSend={() => handleSubmit(input)}
             isLoading={loading}
           />
         </Box>
       </Box>
-      {/* Right: Placeholder for future automation/insights */}
+      {/* Right: Trading Panel */}
       <Box
         sx={{
           flex: 1,
           minWidth: 0,
           display: { xs: 'none', md: 'flex' },
-          alignItems: 'center',
-          justifyContent: 'center',
+          flexDirection: 'column',
           bgcolor: 'background.default',
           borderRadius: 3,
-          boxShadow: 0,
+          boxShadow: 1,
+          overflow: 'auto'
         }}
       >
-        <Box color="text.secondary" fontSize={20} fontWeight={500}>
-          {/* Placeholder content */}
-          <span>Automation & Insights (coming soon)</span>
-        </Box>
+        <TradingPanel />
       </Box>
     </Box>
   );

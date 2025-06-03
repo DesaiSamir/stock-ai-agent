@@ -14,8 +14,14 @@ export interface ChatMessage {
   content: string;
 }
 
+interface ToolResult {
+  name: string;
+  result: unknown;
+}
+
 export interface AIAnalysisRequest {
   messages: ChatMessage[];
+  toolResults?: ToolResult[];
   bars?: unknown; // Replace with your specific market data type
   quoteData?: unknown;
   newsAnalysis?: unknown;
@@ -38,21 +44,31 @@ export class AIService {
     options: Partial<{
       temperature: number;
       maxTokens: number;
-    }> = {},
-    retryCount = 0
+      toolResults?: ToolResult[];
+    }> = {}
   ): Promise<string> {
     if (!aiConfig.openaiApiKey) {
       throw new Error("OpenAI API key not configured");
     }
 
     try {
+      // If we have tool results, add them to the messages
+      const messagesWithTools = [...messages];
+      if (options.toolResults?.length) {
+        messagesWithTools.push({
+          role: "system",
+          content: `Previous tool results:\n${JSON.stringify(options.toolResults, null, 2)}\n\nPlease analyze these results and respond in the required JSON format.`
+        });
+      }
+
       const response = await axios.post(
         `${aiConfig.baseUrl}/chat/completions`,
         {
           model: aiConfig.model,
-          messages,
+          messages: messagesWithTools,
           temperature: options.temperature ?? aiConfig.temperature,
           max_tokens: options.maxTokens ?? aiConfig.maxTokens,
+          response_format: { type: "json_object" }
         },
         {
           headers: {
@@ -66,41 +82,18 @@ export class AIService {
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         const status = error.response.status;
-        const errorMessage =
-          error.response.data?.error?.message || error.message;
+        const errorMessage = error.response.data?.error?.message || error.message;
 
-        // Handle rate limiting
-        if (status === 429) {
-          const retryAfter = parseInt(
-            error.response.headers["retry-after"] || "5"
-          );
-
-          if (retryCount < 3) {
-            // Max 3 retries
-            console.warn(
-              `Rate limited by OpenAI API. Retrying after ${retryAfter} seconds...`
-            );
-            await new Promise((resolve) =>
-              setTimeout(resolve, retryAfter * 1000)
-            );
-            return this.makeOpenAIRequest(messages, options, retryCount + 1);
-          }
-
-          throw new Error(
-            `OpenAI API rate limit exceeded. Please try again after ${retryAfter} seconds.`
-          );
-        }
-
-        // Handle other specific error cases
+        // Handle specific error cases
         switch (status) {
           case 401:
             throw new Error("OpenAI API key is invalid");
           case 403:
-            throw new Error(
-              "OpenAI API key does not have permission for this request"
-            );
+            throw new Error("OpenAI API key does not have permission for this request");
           case 404:
             throw new Error("The requested OpenAI model was not found");
+          case 429:
+            throw new Error("OpenAI API rate limit exceeded. Please try again later.");
           case 500:
             throw new Error("OpenAI service internal error");
           default:

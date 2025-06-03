@@ -4,9 +4,10 @@ import React, { useEffect, useState } from "react";
 import { ThemeProvider } from "@/theme/ThemeContext";
 import { ThemeToggle } from "@/components/core/ThemeToggle";
 import { AppBar, Toolbar, Typography, Box, Button } from "@mui/material";
-
 import { useSessionStore } from "@/store/session";
 import { TickerBar } from "@/components/blocks/TickerBar";
+import { initializeApp } from "@/lib/init";
+import { logger } from "@/utils/logger";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -18,6 +19,14 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
   useEffect(() => {
     setMounted(true);
+    try {
+      initializeApp();
+    } catch (error) {
+      logger.error({
+        message: 'Failed to initialize app',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
   }, []);
 
   // Don't render connection-dependent UI until after hydration

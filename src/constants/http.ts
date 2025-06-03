@@ -17,7 +17,7 @@ export const ENDPOINTS = {
   },
   NEWS: {
     GET_NEWS: "/api/news",
-    FINHUB_NEWS: "/api/news/finhub",
+    FINHUB_NEWS: "/api/news/finnhub",
   },
   TRADESTATION: {
     MARKET_DATA: "/api/tradestation/marketdata",
@@ -26,4 +26,11 @@ export const ENDPOINTS = {
     ORDER: "/v2/data/order",
     ACCOUNT: "/v2/data/account",
   },
-};
+  TRADING: {
+    MARKET_DATA: "/api/trading/market-data",
+    NEWS_ANALYSIS: "/api/trading/news-analysis",
+    SIGNAL: "/api/trading/signal",
+    EXECUTE: "/api/trading/execute",
+    ACTIVE_TRADES: "/api/trading/active-trades",
+  },
+} as const;

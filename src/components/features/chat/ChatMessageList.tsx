@@ -1,10 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { Box } from '@mui/material';
-import { ChatMessage as ChatMessageComponent } from '@/components/blocks/ChatMessage';
-import { ChatMessage } from '@/services/chat';
+import { ChatMessage as ChatMessageComponent } from '@/components/features/chat/ChatMessage';
+import { Message } from '@/store/chat';
 
 interface ChatMessageListProps {
-  messages: ChatMessage[];
+  messages: Message[];
   chatHistoryRef?: React.RefObject<HTMLDivElement>;
 }
 
@@ -39,6 +39,7 @@ export function ChatMessageList({ messages, chatHistoryRef }: ChatMessageListPro
               role={message.role as 'user' | 'assistant'}
               content={message.content}
               isLoading={(message as unknown as { isLoading?: boolean }).isLoading}
+              isIntermediate={message.isIntermediate}
             />
           </Box>
         ))}

@@ -15,8 +15,8 @@ export interface Candlestick {
   mxbr?: number;
   mxcr?: number;
   pattern?: string;
-  patternType?: "bullish" | "bearish";
-  candle?: number;
+  patternType?: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
+  candle?: 'DOJI' | 'HAMMER' | 'SHOOTING_STAR' | 'ENGULFING' | 'HARAMI';
   price: number;
   index?: number;
   ema12?: number;

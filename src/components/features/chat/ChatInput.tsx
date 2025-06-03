@@ -5,7 +5,7 @@ import SendIcon from "@mui/icons-material/Send";
 interface ChatInputProps {
   value: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-  onKeyPress: (e: React.KeyboardEvent) => void;
+  onKeyDown: (e: React.KeyboardEvent) => void;
   onSend: () => void;
   isLoading: boolean;
   placeholder?: string;
@@ -14,7 +14,7 @@ interface ChatInputProps {
 export const ChatInput: React.FC<ChatInputProps> = ({
   value,
   onChange,
-  onKeyPress,
+  onKeyDown,
   onSend,
   isLoading,
   placeholder = "Type your message...",
@@ -37,7 +37,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     <InputBase
       value={value}
       onChange={onChange}
-      onKeyPress={onKeyPress}
+      onKeyDown={onKeyDown}
       placeholder={placeholder}
       disabled={isLoading}
       multiline

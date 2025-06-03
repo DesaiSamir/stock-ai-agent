@@ -1,15 +1,16 @@
 import React from 'react';
 import { Box, useTheme } from '@mui/material';
 import { handleClipboardCopy } from '@/utils/chat';
-import { ReactMarkdownRenderer } from '../ui/markdown/ReactMarkdownRenderer';
+import { ReactMarkdownRenderer } from '@/components/ui/markdown/ReactMarkdownRenderer';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
   content: string;
   isLoading?: boolean;
+  isIntermediate?: boolean;
 }
 
-export function ChatMessage({ role, content, isLoading }: ChatMessageProps) {
+export function ChatMessage({ role, content, isLoading, isIntermediate }: ChatMessageProps) {
   const isUser = role === 'user';
   const theme = useTheme();
   return (
@@ -18,6 +19,10 @@ export function ChatMessage({ role, content, isLoading }: ChatMessageProps) {
       flexDirection="column"
       alignItems={isUser ? 'flex-end' : 'flex-start'}
       mb={2}
+      sx={{
+        opacity: isIntermediate ? 0.7 : 1,
+        transition: 'opacity 0.3s ease'
+      }}
     >
       {/* Role label */}
       <Box
@@ -49,14 +54,16 @@ export function ChatMessage({ role, content, isLoading }: ChatMessageProps) {
           color: isUser ? 'purple.900' : theme.palette.text.primary,
           borderRadius: 4,
           boxShadow: 1,
-          px: 3,
-          py: 2,
+          px: 1,
+          py: 1,
           maxWidth: '90%',
           fontSize: 17,
           fontWeight: 400,
           ml: isUser ? 'auto' : 0,
           mr: isUser ? 0 : 'auto',
           wordBreak: 'break-word',
+          fontStyle: isIntermediate ? 'italic' : 'normal',
+          borderLeft: isIntermediate ? `4px solid ${theme.palette.primary.main}` : 'none'
         }}
       >
         {isLoading ? (
