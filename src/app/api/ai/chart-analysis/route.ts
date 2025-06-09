@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { aiService } from '@/app/api/services/ai/aiService';
 import { TradeSignal } from '@/types/agent';
+import { ChartAnalysisRequest } from '@/types/chart-analysis';
 
 export async function POST(req: NextRequest) {
-  const { symbol, bars } = await req.json();
+  const request: ChartAnalysisRequest = await req.json();
 
   // Use AI service for chart analysis
-  const aiResult = await aiService.analyzeChart(symbol, bars);
+  const aiResult = await aiService.analyzeChart(request);
 
   // Use the last bar for price and timestamp
-  const lastBar = bars[bars.length - 1];
+  const lastBar = request.bars?.[request.bars.length - 1];
 
   const response: TradeSignal = {
-    symbol,
+    symbol: request.symbol,
     action: aiResult.action as 'BUY' | 'SELL',
     confidence: aiResult.confidence,
     analysis: {
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
       optionsPlay: aiResult?.optionsPlay,
     },
     rawResponse: aiResult.rawResponse,
-    price: lastBar.close,
+    price: lastBar?.close ?? 0,
     timestamp: new Date(),
     source: 'ANALYSIS',
   }

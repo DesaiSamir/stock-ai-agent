@@ -5,6 +5,7 @@ export abstract class BaseTool {
   public abstract readonly type: ToolType;
   public abstract readonly description: string;
   public abstract readonly payloadSchema: Record<string, unknown>;
+  public abstract readonly prompt: string;
 
   protected createSuccessResult(
     data: unknown,

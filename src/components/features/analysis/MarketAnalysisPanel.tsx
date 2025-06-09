@@ -1,17 +1,12 @@
 import React, { useState } from 'react';
 import { Card, CardContent, Typography, Button, CircularProgress, Box } from '@mui/material';
 import { AIAnalysisResponse } from '../../../app/api/services/ai/aiService';
-import { Candlestick } from '@/types/candlestick';
 import { ReactMarkdownRenderer } from '@/components/ui/markdown/ReactMarkdownRenderer';
 import { useMarketDataStore } from '@/store/market-data';
 import { useNewsStore } from '@/store/news-store';
 
-interface MarketAnalysisPanelProps {
-  symbol: string;
-  marketData: Candlestick[];
-}
 
-export const MarketAnalysisPanel: React.FC<MarketAnalysisPanelProps> = () => {
+export const MarketAnalysisPanel: React.FC = () => {
   const [analysis, setAnalysis] = useState<AIAnalysisResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

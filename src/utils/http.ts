@@ -199,7 +199,7 @@ export const http = {
       this.calculateMovingAverages(formattedData);
 
       // Detect patterns
-      return patternDetector.detectPattern(formattedData, "Minute");
+      return patternDetector.detectPattern(formattedData);
     } catch (error) {
       console.error("Error formatting bar data:", error);
       return [];

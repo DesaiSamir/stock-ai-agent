@@ -1,4 +1,4 @@
-import { registerHandlers } from '@/actions';
+import { registerAllActions } from '@/actions';
 import { registerAllTools } from '@/tools';
 import { registerAllAgents } from '@/agents';
 import { logger } from '@/utils/logger';
@@ -6,8 +6,8 @@ import { logger } from '@/utils/logger';
 export function initializeApp() {
   try {
     // Register action handlers
-    registerHandlers();
-    logger.info({ message: 'Action handlers registered successfully' });
+    registerAllActions();
+    logger.info({ message: 'Actions registered successfully' });
 
     // Register tools
     registerAllTools();
@@ -19,7 +19,7 @@ export function initializeApp() {
   } catch (error) {
     logger.error({
       message: 'Error during app initialization',
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error : new Error('Unknown error')
     });
     throw error;
   }

@@ -6,8 +6,10 @@ import { ThemeToggle } from "@/components/core/ThemeToggle";
 import { AppBar, Toolbar, Typography, Box, Button } from "@mui/material";
 import { useSessionStore } from "@/store/session";
 import { TickerBar } from "@/components/blocks/TickerBar";
+import { AgentToolbar } from "@/components/blocks/AgentToolbar";
 import { initializeApp } from "@/lib/init";
 import { logger } from "@/utils/logger";
+import type { AgentTabKey } from "@/constants/sidebar";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -16,6 +18,7 @@ interface AppShellProps {
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const { connect, isConnected, isConnecting } = useSessionStore();
   const [mounted, setMounted] = useState(false);
+  const [activeAgent, setActiveAgent] = useState<AgentTabKey>("dashboard");
 
   useEffect(() => {
     setMounted(true);
@@ -24,7 +27,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
     } catch (error) {
       logger.error({
         message: 'Failed to initialize app',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: new Error(error instanceof Error ? error.message : 'Unknown error')
       });
     }
   }, []);
@@ -81,8 +84,11 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
           </Toolbar>
         </AppBar>
         <TickerBar />
-        <Box component="main" sx={{ flexGrow: 1, overflow: "hidden" }}>
-          {children}
+        <Box sx={{ display: "flex", flexGrow: 1, overflow: "hidden" }}>
+          <AgentToolbar onSelectAgent={setActiveAgent} activeAgent={activeAgent} />
+          <Box component="main" sx={{ flexGrow: 1, overflow: "hidden" }}>
+            {children}
+          </Box>
         </Box>
       </Box>
     </ThemeProvider>

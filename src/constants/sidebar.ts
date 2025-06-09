@@ -1,1 +1,1 @@
-export type AgentTabKey = "dynamic-chart" | "news" | "trading" | "analysis" | "dashboard";
+export type AgentTabKey = "dynamic-chart" | "chat" | "trading" | "analysis" | "dashboard";

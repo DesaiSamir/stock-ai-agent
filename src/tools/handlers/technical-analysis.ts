@@ -27,6 +27,33 @@ export class TechnicalAnalysisTool extends BaseTool {
 
   public readonly type: ToolType = 'TECHNICAL_ANALYSIS';
   public readonly description = 'Performs technical analysis on market data to generate trading signals';
+  public readonly prompt = `Analyze the technical indicators and provide:
+
+1. Technical Analysis
+- Current trend and strength
+- Key support/resistance levels
+- Important technical indicators
+- Pattern recognition
+- Volume analysis
+
+2. Trading Signals
+- Entry/exit opportunities
+- Stop loss levels
+- Risk/reward ratios
+- Position sizing recommendations
+
+3. Indicator Analysis
+- Moving averages (SMA, EMA)
+- Momentum indicators (RSI, MACD)
+- Volatility indicators (Bollinger Bands, ATR)
+- Volume indicators (OBV, Volume Profile)
+
+4. Market Context
+- Trend stage identification
+- Market structure analysis
+- Timeframe correlation
+- Potential catalysts`;
+
   public readonly payloadSchema = {
     type: 'object',
     properties: {
@@ -65,7 +92,7 @@ export class TechnicalAnalysisTool extends BaseTool {
       if (!data.bars || !Array.isArray(data.bars)) {
         throw new Error('Invalid market data format');
       }
-
+      
       // Calculate technical indicators
       const indicators = this.technicalAnalysisService.calculateAllIndicators(data.bars);
       const trend = this.technicalAnalysisService.analyzeTrend(data.bars, indicators);
@@ -80,7 +107,8 @@ export class TechnicalAnalysisTool extends BaseTool {
           indicators,
           trend,
           volume
-        }
+        },
+        bars: data.bars
       }, {
         symbol,
         timeframe,
@@ -113,8 +141,8 @@ export class TechnicalAnalysisTool extends BaseTool {
     if (!['1m', '5m', '15m', '1h', '4h', '1d', '1w', '1M'].includes(payload.timeframe)) {
       throw new Error('Invalid timeframe value');
     }
-    if (payload.limit && (typeof payload.limit !== 'number' || payload.limit < 50 || payload.limit > 500)) {
-      throw new Error('Limit must be a number between 50 and 500');
+    if (payload.limit && (typeof payload.limit !== 'number' || payload.limit < 10 || payload.limit > 100)) {
+      throw new Error('Limit must be a number between 10 and 100');
     }
     return {
       symbol: payload.symbol,
@@ -152,17 +180,17 @@ export class TechnicalAnalysisTool extends BaseTool {
       if (macd.crossover === 'BULLISH') {
         reasons.push('MACD shows bullish crossover');
         confidence += 0.1;
-      }
-      
+    }
+
       if (!rsi.isOverbought) {
         reasons.push('RSI indicates room for upside');
         confidence += 0.1;
-      }
+    }
     } else if (primaryTrend === 'BEARISH') {
       action = 'SELL';
       confidence = strength;
       reasons.push(`Strong bearish trend with ${(strength * 100).toFixed(1)}% strength`);
-      
+
       if (!priceLocation.aboveMA200) {
         reasons.push(`Price is below 200 SMA by ${Math.abs(priceLocation.distanceFromMA200).toFixed(1)}%`);
         confidence += 0.1;
@@ -183,7 +211,7 @@ export class TechnicalAnalysisTool extends BaseTool {
         reasons.push('RSI indicates overbought conditions');
       } else if (rsi.isOversold) {
         reasons.push('RSI indicates oversold conditions');
-      }
+    }
     }
 
     // Cap confidence at 1.0

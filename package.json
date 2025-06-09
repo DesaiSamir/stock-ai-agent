@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "client": "next dev",
+    "client": "next dev --port 3001",
     "dev": "next dev --inspect",
     "build": "next build",
     "start": "next start",
@@ -33,6 +33,7 @@
     "js-cookie": "^3.0.5",
     "luxon": "^3.6.1",
     "next": "15.3.1",
+    "openai": "^5.1.0",
     "prop-types": "^15.8.1",
     "react": "^19.1.0",
     "react-chartjs-2": "^5.3.0",

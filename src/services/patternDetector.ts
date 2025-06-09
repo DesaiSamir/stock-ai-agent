@@ -157,7 +157,7 @@ class PatternDetector {
       current.open > prev.close && // Opens above previous close
       current.close < prev.open // Closes below previous open
     );
-  }
+    }
 
   private isBearishHarami(current: Candlestick, prev: Candlestick): boolean {
     return (

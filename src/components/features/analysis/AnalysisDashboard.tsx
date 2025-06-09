@@ -2,17 +2,8 @@ import React from 'react';
 import { Box } from '@mui/material';
 import { MarketAnalysisPanel } from './MarketAnalysisPanel';
 import { TradingStrategyCard } from './TradingStrategyCard';
-import { Candlestick } from '@/types/candlestick';
 
-interface AnalysisDashboardProps {
-  symbol: string;
-  marketData: Candlestick[];
-}
-
-export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
-  symbol,
-  marketData,
-}) => {
+export const AnalysisDashboard = () => {
   return (
     <Box
       sx={{
@@ -47,7 +38,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
             overflowY: { xs: 'auto', md: 'visible' },
           }}
         >
-          <MarketAnalysisPanel symbol={symbol} marketData={marketData} />
+          <MarketAnalysisPanel />
         </Box>
 
         <Box
@@ -62,7 +53,7 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
             overflowY: { xs: 'auto', md: 'visible' },
           }}
         >
-          <TradingStrategyCard symbol={symbol} />
+          <TradingStrategyCard />
         </Box>
       </Box>
     </Box>

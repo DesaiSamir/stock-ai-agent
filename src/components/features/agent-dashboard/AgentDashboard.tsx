@@ -1,4 +1,6 @@
-import React from 'react';
+"use client";
+
+import React, { useEffect, useState } from 'react';
 import { Box } from '@mui/material';
 import { useAgentMonitoringStore } from '@/store/agent-monitoring';
 import { useAgentOrchestrator } from '@/hooks/useAgentOrchestrator';
@@ -8,6 +10,8 @@ import { SignalsCard } from './SignalsCard';
 import { TradesCard } from './TradesCard';
 
 export const AgentDashboard: React.FC = () => {
+  const [mounted, setMounted] = useState(false);
+
   // Setup orchestrator listeners
   useAgentOrchestrator();
 
@@ -18,6 +22,14 @@ export const AgentDashboard: React.FC = () => {
     recentTrades,
     toggleAgents
   } = useAgentMonitoringStore();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <Box sx={{ 

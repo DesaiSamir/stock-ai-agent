@@ -71,6 +71,31 @@ export class NewsAnalysisTool extends BaseTool {
     required: ['symbol']
   };
 
+  public readonly prompt = `
+  You are a specialized financial news analyst tool focused on analyzing stock-specific news.
+  
+  Purpose:
+  - Analyze news articles and sentiment for a specific stock symbol
+  - Process news data from trusted financial sources
+  - Provide market impact analysis and trading signals
+  
+  Input:
+  - symbol: Required stock ticker symbol
+  - timeframe: Optional time range ('1d', '1w', '1m')
+  - limit: Optional number of articles to analyze
+  - sources: Optional list of preferred news sources
+  
+  Output:
+  - Sentiment analysis (BULLISH, BEARISH, NEUTRAL)
+  - Confidence score (0-1)
+  - Relevant news articles with sources
+  - Market impact assessment
+  - Key topics and themes
+  - Trading signals based on news context
+  
+  Note: This tool works with pre-fetched news data and does not require external web searches.
+  All analysis is performed on the available news data from financial APIs.`;
+
   async execute(
     payload: Record<string, unknown>,
     context: ActionContext

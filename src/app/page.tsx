@@ -1,22 +1,12 @@
 "use client";
 
 import React from "react";
-import { StockDashboard } from "../components/sections/StockDashboard";
-import {
-  sampleTradingSignals,
-  sampleNewsItems,
-  sampleAgentStatus,
-  // defaultStockConfig,
-} from "../data/samples";
+import { AgentDashboard } from "@/components/features/agent-dashboard/AgentDashboard";
 
 export default function Home() {
   return (
     <main className="min-h-screen bg-gray-50">
-      <StockDashboard
-        tradingSignals={sampleTradingSignals}
-        newsItems={sampleNewsItems}
-        agentStatus={sampleAgentStatus}
-      />
+      <AgentDashboard />
     </main>
   );
 }

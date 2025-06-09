@@ -1,3 +1,4 @@
+'use client';
 import React, { useState, useRef, useEffect } from 'react';
 import { Box, Typography, Paper, CircularProgress, Button } from '@mui/material';
 import { useMarketDataStore } from "@/store/market-data";
@@ -49,7 +50,7 @@ interface TechnicalAnalysisResult {
   };
 }
 
-export const TradingPanel: React.FC = () => {
+export default function TradingPage() {
   const [marketData, setMarketData] = useState<MarketData | null>(null);
   const [newsAnalysis, setNewsAnalysis] = useState<NewsAnalysis | null>(null);
   const [loading, setLoading] = useState(false);

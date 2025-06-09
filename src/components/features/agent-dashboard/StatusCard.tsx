@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from 'react';
 import { Box, Button, Chip } from '@mui/material';
 import { AgentCard } from './AgentCard';

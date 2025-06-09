@@ -15,22 +15,17 @@ import {
 import { ReactMarkdownRenderer } from "@/components/ui/markdown/ReactMarkdownRenderer";
 import { useMarketDataStore } from "@/store/market-data";
 
-interface TradingStrategyCardProps {
-  symbol: string;
-}
 
 type TimeFrame = "1m" | "5m" | "15m" | "1h" | "4h" | "1d" | "1w" | "1M";
 type RiskTolerance = "low" | "medium" | "high";
 
-export const TradingStrategyCard: React.FC<TradingStrategyCardProps> = ({
-  symbol,
-}) => {
+export const TradingStrategyCard = () => {
   const [timeframe, setTimeframe] = useState<TimeFrame>("1h");
   const [riskTolerance, setRiskTolerance] = useState<RiskTolerance>("medium");
   const [strategy, setStrategy] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { getBarData, getQuote } = useMarketDataStore();
+  const { getBarData, getQuote, currentSymbol: symbol } = useMarketDataStore();
 
   const handleTimeframeChange = (event: SelectChangeEvent) => {
     setTimeframe(event.target.value as TimeFrame);

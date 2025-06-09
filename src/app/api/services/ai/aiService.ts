@@ -1,6 +1,7 @@
 import axios from "axios";
 import { aiConfig } from "./config";
 import { NewsItem } from "@/types/agent";
+import { logger } from "@/utils/logger";
 import {
   MARKET_ANALYSIS_PROMPT,
   MARKET_SENTIMENT_PROMPT,
@@ -8,6 +9,8 @@ import {
   TRADING_STRATEGY_PROMPT,
   CHART_ANALYSIS_PROMPT,
 } from "./prompts";
+import { ChartAnalysisRequest, ChartAnalysisResponse } from "@/types/chart-analysis";
+import { MarketAnalysisResponse, MarketSentimentResponse, TradingStrategyResponse } from "@/types/market-analysis";
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant" | "developer";
@@ -36,6 +39,26 @@ export interface AIAnalysisResponse {
   confidence?: number;
   suggestedActions?: string[];
   reasoning?: string;
+}
+
+interface NewsAnalysisResponse {
+  sentiment: "bullish" | "bearish" | "neutral";
+  confidence: number;
+  predictedImpact: {
+    priceDirection: "up" | "down" | "stable";
+    magnitudePercent: number;
+    timeframe: "immediate" | "short-term" | "long-term";
+  };
+  keyEvents: string[];
+  reasoning: string;
+}
+
+interface NewsAnalysisContext {
+  currentPrice: number;
+  volume: number;
+  previousClose: number;
+  sector?: string;
+  relatedSymbols?: string[];
 }
 
 export class AIService {
@@ -106,7 +129,7 @@ export class AIService {
     }
   }
 
-  async analyzeMarket(request: AIAnalysisRequest): Promise<AIAnalysisResponse> {
+  async analyzeMarket(request: AIAnalysisRequest): Promise<MarketAnalysisResponse> {
     const messages: ChatMessage[] = [
       {
         role: "system",
@@ -126,45 +149,43 @@ export class AIService {
       maxTokens: request.maxTokens,
     });
 
-    // Parse the AI response into a structured format
     try {
-      const analysis = this.parseAnalysis(analysisText);
+      const analysis = JSON.parse(analysisText) as MarketAnalysisResponse;
+      
+      // Validate the response structure
+      if (!analysis.sentiment || !analysis.confidence || !analysis.technicalFactors) {
+        throw new Error('Invalid response structure from AI');
+      }
+
       return analysis;
     } catch (error) {
-      console.error("Failed to parse AI analysis:", error);
+      logger.error({
+        message: 'Failed to parse market analysis response',
+        error: new Error(error instanceof Error ? error.message : 'Unknown error'),
+        response: analysisText
+      });
+
+      // Provide a fallback response
       return {
         analysis: analysisText,
         sentiment: "neutral",
         confidence: 0.5,
         suggestedActions: [],
-        reasoning: "Failed to parse structured analysis",
+        reasoning: "Failed to parse market analysis",
+        technicalFactors: {
+          trend: "sideways",
+          strength: 0.5,
+          keyLevels: {
+            support: [],
+            resistance: []
+          }
+        },
+        riskAssessment: {
+          level: "medium",
+          factors: ["Analysis failed"]
+        }
       };
     }
-  }
-
-  private parseAnalysis(analysisText: string): AIAnalysisResponse {
-    // Try to extract structured data from the AI response
-    // This is a simple implementation - you might want to make this more sophisticated
-    const sentiment = analysisText.toLowerCase().includes("bullish")
-      ? "bullish"
-      : analysisText.toLowerCase().includes("bearish")
-        ? "bearish"
-        : "neutral";
-
-    const confidence = 0.7; // You might want to implement more sophisticated confidence scoring
-
-    const suggestedActions = analysisText
-      .split("\n")
-      .filter((line) => line.startsWith("- ") || line.startsWith("* "))
-      .map((line) => line.replace(/^[- *] /, ""));
-
-    return {
-      analysis: analysisText,
-      sentiment,
-      confidence,
-      suggestedActions,
-      reasoning: analysisText,
-    };
   }
 
   async generateTradingStrategy(
@@ -173,7 +194,7 @@ export class AIService {
     riskTolerance: "low" | "medium" | "high",
     marketData: [],
     quoteData: []
-  ): Promise<string> {
+  ): Promise<TradingStrategyResponse> {
     const messages: ChatMessage[] = [
       {
         role: "system",
@@ -190,14 +211,60 @@ export class AIService {
       },
     ];
 
-    return this.makeOpenAIRequest(messages);
+    const response = await this.makeOpenAIRequest(messages);
+
+    try {
+      const strategy = JSON.parse(response) as TradingStrategyResponse;
+      
+      // Validate the response structure
+      if (!strategy.symbol || !strategy.strategy || !strategy.entry || !strategy.exits) {
+        throw new Error('Invalid response structure from AI');
+      }
+
+      return strategy;
+    } catch (error) {
+      logger.error({
+        message: 'Failed to parse trading strategy response',
+        error: new Error(error instanceof Error ? error.message : 'Unknown error'),
+        response
+      });
+
+      // Provide a fallback response
+      return {
+        symbol,
+        strategy: {
+          type: "day",
+          direction: "long",
+          timeframe
+        },
+        entry: {
+          price: 0,
+          conditions: ["Failed to generate strategy"],
+          timing: "N/A"
+        },
+        exits: {
+          stopLoss: 0,
+          target: 0,
+          trailingStop: null
+        },
+        options: null,
+        riskManagement: {
+          riskRewardRatio: 0,
+          positionSize: "0%",
+          maxRiskPercent: 0
+        },
+        marketContext: {
+          keyEvents: [],
+          technicalSetup: "Failed to analyze",
+          volumeProfile: "N/A"
+        },
+        confidence: 0,
+        reasoning: "Failed to generate trading strategy"
+      };
+    }
   }
 
-  async analyzeSentiment(texts: string[]): Promise<{
-    overall: "bullish" | "bearish" | "neutral";
-    score: number;
-    analysis: string;
-  }> {
+  async analyzeSentiment(texts: string[]): Promise<MarketSentimentResponse> {
     const messages: ChatMessage[] = [
       {
         role: "system",
@@ -211,21 +278,36 @@ export class AIService {
 
     const response = await this.makeOpenAIRequest(messages);
 
-    // Simple sentiment scoring - you might want to make this more sophisticated
-    const sentiment = response.toLowerCase().includes("bullish")
-      ? "bullish"
-      : response.toLowerCase().includes("bearish")
-        ? "bearish"
-        : "neutral";
+    try {
+      const sentiment = JSON.parse(response) as MarketSentimentResponse;
+      
+      // Validate the response structure
+      if (!sentiment.overall || !sentiment.score || !sentiment.marketImpact) {
+        throw new Error('Invalid response structure from AI');
+      }
 
-    const score =
-      sentiment === "neutral" ? 0.5 : sentiment === "bullish" ? 0.8 : 0.2;
+      return sentiment;
+    } catch (error) {
+      logger.error({
+        message: 'Failed to parse sentiment analysis response',
+        error: new Error(error instanceof Error ? error.message : 'Unknown error'),
+        response
+      });
 
-    return {
-      overall: sentiment,
-      score,
-      analysis: response,
-    };
+      // Provide a fallback response
+      return {
+        overall: "neutral",
+        score: 0.5,
+        analysis: "Failed to analyze sentiment",
+        confidence: 0.5,
+        keyFactors: [],
+        marketImpact: {
+          immediate: "Unknown",
+          shortTerm: "Unknown",
+          longTerm: "Unknown"
+        }
+      };
+    }
   }
 
   async healthCheck(): Promise<{
@@ -273,24 +355,8 @@ export class AIService {
 
   async analyzeNewsImpact(
     news: NewsItem[],
-    marketContext?: {
-      currentPrice: number;
-      volume: number;
-      previousClose: number;
-      sector?: string;
-      relatedSymbols?: string[];
-    }
-  ): Promise<{
-    sentiment: "bullish" | "bearish" | "neutral";
-    confidence: number;
-    predictedImpact: {
-      priceDirection: "up" | "down" | "stable";
-      magnitudePercent: number;
-      timeframe: "immediate" | "short-term" | "long-term";
-    };
-    keyEvents: string[];
-    reasoning: string;
-  }> {
+    marketContext?: NewsAnalysisContext
+  ): Promise<NewsAnalysisResponse> {
     const messages: ChatMessage[] = [
       {
         role: "system",
@@ -316,84 +382,39 @@ export class AIService {
     ];
 
     const analysisText = await this.makeOpenAIRequest(messages, {
-      temperature: 0.2, // Lower temperature for more focused analysis
+      temperature: 0.2,
       maxTokens: 1000,
     });
 
-    // Parse the analysis into structured format
     try {
-      // Extract sentiment
-      const sentimentMatch = analysisText.match(
-        /SENTIMENT:\s*(bullish|bearish|neutral)/i
-      );
-      const sentiment =
-        (sentimentMatch?.[1].toLowerCase() as
-          | "bullish"
-          | "bearish"
-          | "neutral") || "neutral";
+      // Parse the JSON response
+      const analysis = JSON.parse(analysisText) as NewsAnalysisResponse;
 
-      // Extract confidence
-      const confidenceMatch = analysisText.match(/CONFIDENCE:\s*(\d*\.?\d+)/i);
-      const confidence = confidenceMatch ? parseFloat(confidenceMatch[1]) : 0.5;
+      // Validate the response structure
+      if (!analysis.sentiment || !analysis.confidence || !analysis.predictedImpact || !analysis.keyEvents) {
+        throw new Error('Invalid response structure from AI');
+      }
 
-      // Extract price impact prediction
-      const impactMatch = analysisText.match(
-        /PRICE IMPACT:\s*(up|down|stable)\s+(\d*\.?\d+)%/i
-      );
-      const predictedImpact = {
-        priceDirection:
-          (impactMatch?.[1].toLowerCase() as "up" | "down" | "stable") ||
-          "stable",
-        magnitudePercent: impactMatch ? parseFloat(impactMatch[2]) : 0,
-        timeframe: (analysisText
-          .match(/TIMEFRAME:\s*(immediate|short-term|long-term)/i)?.[1]
-          .toLowerCase() || "short-term") as
-          | "immediate"
-          | "short-term"
-          | "long-term",
-      };
-
-      // Extract key events
-      const keyEvents = analysisText
-        .split("\n")
-        .filter((line) => line.startsWith("- "))
-        .map((line) => line.replace(/^- /, ""));
-
-      return {
-        sentiment,
-        confidence,
-        predictedImpact,
-        keyEvents,
-        reasoning: analysisText,
-      };
+      return analysis;
     } catch (error) {
-      console.error("Failed to parse news impact analysis:", error);
+      console.error("Failed to parse news analysis response:", error);
+
+      // Provide a fallback response
       return {
         sentiment: "neutral",
         confidence: 0.5,
         predictedImpact: {
           priceDirection: "stable",
           magnitudePercent: 0,
-          timeframe: "short-term",
+          timeframe: "short-term"
         },
         keyEvents: [],
-        reasoning: analysisText,
+        reasoning: "Failed to analyze news due to parsing error"
       };
     }
   }
 
-  async analyzeChart(symbol: string, bars: object[]): Promise<{
-    action: "BUY" | "SELL" | "NEUTRAL";
-    confidence: number;
-    reasoning: string;
-    entry?: number;
-    stop?: number;
-    target?: number;
-    optionsPlay?: string;
-    riskReward?: number;
-    probabilityOfProfit?: number;
-    rawResponse?: string;
-  }> {
+  async analyzeChart(request: ChartAnalysisRequest): Promise<ChartAnalysisResponse> {
     const messages: ChatMessage[] = [
       {
         role: "system",
@@ -401,7 +422,7 @@ export class AIService {
       },
       {
         role: "user",
-        content: `Analyze the following chart for ${symbol}:\n${JSON.stringify(bars)}`,
+        content: `Analyze the following chart for ${request.symbol}:\nTimeframe: ${request.timeframe}\n TradeType: ${request.tradeType}\n${JSON.stringify(request.bars)}\n\nTechnical Analysis: ${JSON.stringify(request.technicalAnalysis)}\n\nNews Analysis: ${JSON.stringify(request.newsAnalysis)}\n\nMarket Data: ${JSON.stringify(request.marketData)}`,
       },
     ];
 

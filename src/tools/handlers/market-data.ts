@@ -7,6 +7,7 @@ import type { BarData, TimeUnit } from '@/types/tradestation';
 import { Candlestick } from '@/types/candlestick';
 import { patternDetector } from '@/services/patternDetector';
 import { TechnicalAnalysisService } from '@/services/technical-analysis';
+import { formatToEST } from '@/utils/date';
 
 interface MarketData {
   symbol: string;
@@ -43,6 +44,32 @@ const timeframeToInterval: Record<string, { interval: number; unit: TimeUnit }> 
 export class MarketDataTool extends BaseTool {
   public readonly type: ToolType = 'MARKET_DATA';
   public readonly description = 'Fetches real-time and historical market data for stocks';
+  public readonly prompt = `Analyze the market data and provide:
+
+1. Price Action Analysis
+- Trend identification and strength
+- Key price levels and ranges
+- Candlestick patterns
+- Price momentum
+
+2. Volume Analysis
+- Volume trends and anomalies
+- Volume-price relationship
+- Accumulation/Distribution
+- Volume profile
+
+3. Market Context
+- Time-based patterns
+- Market phase identification
+- Volatility assessment
+- Trading activity analysis
+
+4. Trading Implications
+- Support/Resistance levels
+- Potential reversal points
+- Trend continuation signals
+- Risk/Reward scenarios`;
+
   public readonly payloadSchema = {
     type: 'object',
     properties: {
@@ -168,7 +195,7 @@ export class MarketDataTool extends BaseTool {
     const date = new Date(ts);
 
     return {
-      date: date.toISOString(),
+      date: formatToEST(date),
       open: barData.Open,
       high: barData.High,
       low: barData.Low,
@@ -180,8 +207,6 @@ export class MarketDataTool extends BaseTool {
       symbol: symbol,
     } as Candlestick;
   }
-
-
 
   private async calculateTechnicalAnalysis(data: Candlestick[]) {
     const technicalAnalysisService = TechnicalAnalysisService.getInstance();
@@ -204,7 +229,7 @@ export class MarketDataTool extends BaseTool {
     try {
       const marketDataPayload = this.validatePayload(payload);
       const marketData = await this.fetchMarketData(marketDataPayload);
-
+      
       const lastXBars = marketData.bars.slice(-(marketDataPayload.limit || 20));
 
       const result = this.createSuccessResult({

@@ -1,10 +1,11 @@
 import type { ActionContext, ActionResult } from '../types/actions';
-import { logger } from '@/utils/logger';
+import type { ActionType } from '@/types/actions';
 
 export abstract class BaseActionHandler {
-  public abstract readonly type: string;
+  public abstract readonly type: ActionType;
   public abstract readonly description: string;
   public abstract readonly payloadSchema: Record<string, unknown>;
+  public abstract readonly prompt: string;
 
   constructor() {}
 
@@ -20,7 +21,7 @@ export abstract class BaseActionHandler {
     return {
       success: true,
       data,
-      metadata,
+      metadata: metadata || {},
       timestamp: new Date().toISOString(),
     };
   }
@@ -32,19 +33,16 @@ export abstract class BaseActionHandler {
     return {
       success: false,
       error,
-      metadata,
+      metadata: metadata || {},
       timestamp: new Date().toISOString(),
     };
   }
 
   protected logAction(context: ActionContext, result: ActionResult): void {
-    logger.info({
-      actionType: `Action ${this.type} executed`,
-      messageId: context.messageId,
-      conversationId: context.conversationId,
-      success: result.success,
-      error: result.error,
-      metadata: result.metadata,
+    // TODO: Implement proper logging
+    console.log(`[Action: ${this.type}]`, {
+      context,
+      result,
     });
   }
 } 

@@ -3,20 +3,47 @@ import { getAvailableTools } from '@/tools';
 function getToolsPrompt(): string {
   const tools = getAvailableTools();
   const toolDescriptions = tools.map(tool => {
-    return `${tool.type}: ${tool.description}
-Schema: ${JSON.stringify(tool.payloadSchema, null, 2)}`;
+    return `Tool: ${tool.type}
+Description: ${tool.description}
+
+Analysis Requirements:
+${tool.prompt}
+
+Schema:
+${JSON.stringify(tool.payloadSchema, null, 2)}
+----------------------------------------`;
   }).join('\n\n');
 
   return `You have access to the following tools:
 
 ${toolDescriptions}
 
+Additionally, you can use web search to gather information when no specific tool is available or when you need supplementary data:
+{
+  "type": "tool_request",
+  "reply": "I'll search for relevant information about...",
+  "toolCalls": [
+    {
+      "name": "web_search",
+      "payload": {
+        "search_term": "Your specific search query"
+      }
+    }
+  ]
+}
+
 To use a tool, format your response like this:
 {
-  "tool": "TOOL_TYPE",
-  "payload": {
-    // payload matching the tool's schema
-  }
+  "type": "tool_request",
+  "reply": "Brief explanation of what you're going to analyze",
+  "toolCalls": [
+    {
+      "name": "TOOL_NAME",
+      "payload": {
+        // payload matching the tool's schema
+      }
+    }
+  ]
 }`;
 }
 
@@ -31,6 +58,7 @@ Your capabilities include:
 3. Assessing risk and providing position sizing recommendations
 4. Monitoring news and sentiment for trading signals
 5. Providing real-time market insights and alerts
+6. Researching market information using web search when needed
 
 Guidelines:
 1. Always validate data before making recommendations
@@ -40,6 +68,7 @@ Guidelines:
 5. Highlight both opportunities and risks
 6. Use proper position sizing based on risk parameters
 7. Monitor and adapt to changing market conditions
+8. Use web search when you need additional context or information not available through other tools
 
 When responding:
 1. Be clear and concise
@@ -49,6 +78,7 @@ When responding:
 5. Highlight key risk factors
 6. Give clear entry/exit points when applicable
 7. Include confidence levels in your recommendations
+8. Cite sources when using web-searched information
 
 Remember:
 - Past performance doesn't guarantee future results
@@ -56,6 +86,7 @@ Remember:
 - Be transparent about limitations and uncertainties
 - Update recommendations based on new information
 - Consider market context and conditions
+- Use web search to gather supplementary information when needed
 
 ALWAYS respond in this JSON format:
 {
@@ -90,7 +121,21 @@ Example responses:
   ]
 }
 
-2. When you're analyzing and need more data:
+2. When you need to search the web:
+{
+  "type": "tool_request",
+  "reply": "I'll search for recent news about AAPL's chip manufacturing plans",
+  "toolCalls": [
+    {
+      "name": "web_search",
+      "payload": {
+        "search_term": "Apple silicon chip manufacturing plans 2024"
+      }
+    }
+  ]
+}
+
+3. When you're analyzing and need more data:
 {
   "type": "analysis",
   "reply": "I've analyzed the price trends, but I need to check the volume patterns.",
@@ -107,167 +152,17 @@ Example responses:
   ]
 }
 
-3. When you have completed your analysis or have a response:
+4. When you have completed your analysis or have a response:
 {
   "type": "final_response",
   "reply": "Based on my analysis of AAPL:\n1. Price Trend: Currently bullish...\n2. Technical Indicators: RSI at 65..."
 }
 
 Important:
-- Use "tool_request" when you need to gather data
+- Use "tool_request" when you need to gather data (including web search)
 - Use "analysis" with needsMoreData=true ONLY when you need to perform additional analysis
 - Use "final_response" when you have completed your analysis or are providing a complete answer
 - Never use "analysis" with needsMoreData=false - use "final_response" instead
+- When using web search, be specific in your search terms and cite sources in your analysis
 `;
-}
-
-export function getMarketAnalysisPrompt(symbol: string): string {
-  return `Analyze the market data for ${symbol} and provide:
-
-1. Technical Analysis
-- Current trend and strength
-- Key support/resistance levels
-- Important technical indicators
-- Pattern recognition
-- Volume analysis
-
-2. Trading Signals
-- Entry/exit opportunities
-- Stop loss levels
-- Position sizing recommendations
-- Risk/reward ratio
-
-3. Risk Assessment
-- Market volatility
-- Liquidity considerations
-- Potential risks
-- Position sizing guidelines
-
-4. Recommendations
-- Trading strategy
-- Risk management approach
-- Entry/exit points
-- Position management guidelines
-
-Please use the available tools to gather and analyze the necessary data.`;
-}
-
-export function getRiskAssessmentPrompt(symbol: string): string {
-  return `Perform a comprehensive risk assessment for ${symbol} considering:
-
-1. Market Risk
-- Historical volatility
-- Current market conditions
-- Liquidity analysis
-- Correlation with broader market
-
-2. Position Risk
-- Position sizing recommendations
-- Stop loss placement
-- Risk/reward scenarios
-- Maximum drawdown analysis
-
-3. Technical Risk Factors
-- Trend strength/weakness
-- Support/resistance levels
-- Technical indicator warnings
-- Pattern completion/failure risks
-
-4. Money Management
-- Position sizing guidelines
-- Risk per trade calculation
-- Portfolio exposure recommendations
-- Stop loss management
-
-Please use the available tools to gather the necessary risk metrics and provide a detailed assessment.`;
-}
-
-export function getNewsAnalysisPrompt(symbol: string): string {
-  return `Analyze recent news and sentiment for ${symbol} considering:
-
-1. News Impact
-- Major announcements
-- Market sentiment
-- Trading volume impact
-- Price action correlation
-
-2. Sentiment Analysis
-- Overall market sentiment
-- Social media sentiment
-- Analyst recommendations
-- Institutional activity
-
-3. Technical Correlation
-- News impact on price
-- Volume reaction to news
-- Pattern formations
-- Support/resistance tests
-
-4. Trading Implications
-- Entry/exit opportunities
-- Risk adjustment needs
-- Position sizing impact
-- Strategy modifications
-
-Please use the available tools to gather and analyze news data and provide actionable insights.`;
-}
-
-export function getTechnicalAnalysisPrompt(symbol: string): string {
-  return `Perform a detailed technical analysis for ${symbol} including:
-
-1. Trend Analysis
-- Primary trend direction
-- Trend strength
-- Multiple timeframe analysis
-- Key trend levels
-
-2. Technical Indicators
-- Moving averages
-- Momentum indicators
-- Volume analysis
-- Pattern recognition
-
-3. Support/Resistance
-- Key price levels
-- Breakout/breakdown points
-- Price targets
-- Stop loss levels
-
-4. Trading Signals
-- Entry/exit points
-- Signal strength
-- Confirmation factors
-- Risk parameters
-
-Please use the available tools to calculate and analyze technical indicators and provide detailed insights.`;
-}
-
-export function getPositionSizingPrompt(symbol: string): string {
-  return `Calculate optimal position sizing for ${symbol} considering:
-
-1. Risk Parameters
-- Account risk percentage
-- Trade risk percentage
-- Stop loss distance
-- Entry price levels
-
-2. Market Conditions
-- Current volatility
-- Liquidity conditions
-- Spread considerations
-- Trading volume
-
-3. Technical Factors
-- Trend strength
-- Support/resistance proximity
-- Pattern reliability
-- Indicator confirmation
-
-4. Money Management
-- Position size calculation
-- Risk/reward ratio
-- Multiple position scenarios
-- Scaling guidelines
-
-Please use the available tools to analyze risk metrics and provide position sizing recommendations.`;
 } 

@@ -1,32 +1,27 @@
-import { handlers } from './handlers/index';
 import { ActionRegistry } from './registry';
-import { ActionTypes } from '@/constants/actions';
+import { ExecuteTradeHandler } from './handlers/execute-trade';
+import type { ActionType } from '@/types/actions';
 
-export * from './types';
-export * from './registry';
 export * from './base';
-export * from './handlers/index';
-export * from '@/constants/actions';
+export * from './registry';
+export * from './handlers/execute-trade';
 
-// Function to register all handlers with the registry
-export function registerHandlers(): void {
+// Function to register all actions with the registry
+export function registerAllActions(): void {
   const registry = ActionRegistry.getInstance();
-  handlers.forEach(handler => registry.registerHandler(handler));
+
+  // Register all actions
+  registry.register(new ExecuteTradeHandler());
+  // Add more action registrations here as they are created
 }
 
 // Function to get available actions from the registry
 export function getAvailableActions(): Array<{
-  type: keyof typeof ActionTypes;
+  type: ActionType;
   description: string;
-  payloadSchema: unknown;
+  payloadSchema: Record<string, unknown>;
+  prompt: string;
 }> {
   const registry = ActionRegistry.getInstance();
-  return registry.getRegisteredTypes().map((type: string) => {
-    const handler = registry.getHandler(type);
-    return {
-      type: type as keyof typeof ActionTypes,
-      description: handler?.description || 'No description available',
-      payloadSchema: handler?.payloadSchema || {},
-    };
-  });
+  return registry.getAvailableActions();
 } 

@@ -64,7 +64,33 @@ export class RiskAssessmentTool extends BaseTool {
   }
 
   public readonly type: ToolType = 'RISK_ASSESSMENT';
-  public readonly description = 'Evaluates comprehensive risk analysis for potential trades including market conditions, volatility, news sentiment, and position sizing recommendations';
+  public readonly description = 'Analyzes market risk and provides risk assessment metrics';
+  public readonly prompt = `Analyze the risk metrics and provide:
+
+1. Volatility Analysis
+- Historical volatility levels
+- Volatility trends
+- Volatility breakouts
+- Risk regime identification
+
+2. Risk Metrics
+- Value at Risk (VaR)
+- Maximum drawdown
+- Sharpe ratio
+- Beta and correlation
+
+3. Position Risk
+- Position sizing recommendations
+- Stop loss placement
+- Risk/reward scenarios
+- Portfolio impact
+
+4. Market Risk Context
+- Market conditions assessment
+- Sector/industry risk
+- Systematic risk factors
+- Event risk analysis`;
+
   public readonly payloadSchema = {
     type: 'object',
     properties: {
@@ -189,7 +215,7 @@ export class RiskAssessmentTool extends BaseTool {
       // Calculate overall risk score
       const riskScore = this.calculateOverallRiskScore(riskFactors);
 
-      return {
+    return {
         riskLevel: this.determineRiskLevel(riskScore),
         riskScore,
         maxPositionSize: positionRisk.maxPositionSize,

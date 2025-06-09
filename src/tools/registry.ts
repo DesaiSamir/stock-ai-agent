@@ -30,11 +30,13 @@ export class ToolRegistry {
     type: ToolType;
     description: string;
     payloadSchema: Record<string, unknown>;
+    prompt: string;
   }> {
     return this.getAllTools().map(tool => ({
       type: tool.type,
       description: tool.description,
       payloadSchema: tool.payloadSchema,
+      prompt: tool.prompt
     }));
   }
 } 

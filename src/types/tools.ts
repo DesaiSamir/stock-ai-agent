@@ -1,15 +1,15 @@
 export type ToolType = 
+  | 'MARKET_DATA'
   | 'TECHNICAL_ANALYSIS'
-  | 'FUNDAMENTAL_ANALYSIS'
   | 'RISK_ASSESSMENT'
-  | 'POSITION_SIZING'
   | 'NEWS_ANALYSIS'
-  | 'MARKET_DATA';
+  | 'QUOTE_DATA';
 
 export interface ToolConfig {
   type: ToolType;
   description: string;
   payloadSchema: Record<string, unknown>;
+  prompt: string;
 }
 
 export interface ToolResult {

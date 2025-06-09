@@ -4,14 +4,15 @@ import React, { useState } from "react";
 import { Box, Typography, Tooltip } from "@mui/material";
 import {
   TrendingUp,
-  Article,
   Analytics,
   Menu,
   ChevronLeft,
   BarChart,
   Dashboard,
+  Chat,
 } from "@mui/icons-material";
 import type { AgentTabKey } from "@/constants/sidebar";
+import { useRouter } from "next/navigation";
 
 interface AgentToolbarProps {
   onSelectAgent?: (agent: AgentTabKey) => void;
@@ -73,6 +74,14 @@ export const AgentToolbar: React.FC<AgentToolbarProps> = ({
   activeAgent,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const router = useRouter();
+
+  const handleAgentSelect = (agent: AgentTabKey, path?: string) => {
+    onSelectAgent?.(agent);
+    if (path) {
+      router.push(path);
+    }
+  };
 
   return (
     <Box
@@ -99,35 +108,35 @@ export const AgentToolbar: React.FC<AgentToolbarProps> = ({
         <ToolbarItem
           icon={<Dashboard />}
           label="Agent Dashboard"
-          onClick={() => onSelectAgent?.("dashboard")}
+          onClick={() => handleAgentSelect("dashboard", "/")}
           isActive={activeAgent === "dashboard"}
           isExpanded={isExpanded}
         />
         <ToolbarItem
           icon={<BarChart />}
           label="Dynamic Chart"
-          onClick={() => onSelectAgent?.("dynamic-chart")}
+          onClick={() => handleAgentSelect("dynamic-chart", "/chart")}
           isActive={activeAgent === "dynamic-chart"}
           isExpanded={isExpanded}
         />
         <ToolbarItem
-          icon={<Article />}
-          label="News Agent"
-          onClick={() => onSelectAgent?.("news")}
-          isActive={activeAgent === "news"}
+          icon={<Chat />}
+          label="Chat Agent"
+          onClick={() => handleAgentSelect("chat", "/chat")}
+          isActive={activeAgent === "chat"}
           isExpanded={isExpanded}
         />
         <ToolbarItem
           icon={<TrendingUp />}
           label="Trading Agent"
-          onClick={() => onSelectAgent?.("trading")}
+          onClick={() => handleAgentSelect("trading", "/trading")}
           isActive={activeAgent === "trading"}
           isExpanded={isExpanded}
         />
         <ToolbarItem
           icon={<Analytics />}
           label="Analysis Agent"
-          onClick={() => onSelectAgent?.("analysis")}
+          onClick={() => handleAgentSelect("analysis", "/analysis")}
           isActive={activeAgent === "analysis"}
           isExpanded={isExpanded}
         />
